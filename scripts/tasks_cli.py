@@ -27,16 +27,19 @@ who changed it, and when — visible in the task's detail view. `render` alone i
 tasks.json was hand-edited.
 """
 import argparse
+import contextlib
 import datetime
 import json
 import os
 import re
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DATA_PATH = os.path.join(ROOT, "data", "tasks.json")
 HTML_PATH = os.path.join(ROOT, "tasks.html")
+LOCK_PATH = DATA_PATH + ".lock"
 VALID_URGENCY = ("low", "medium", "high", "critical")
 VALID_ROLES = ("tester", "engineer", "reviewer", "human")
 
@@ -45,15 +48,55 @@ def _now():
     return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
 
+@contextlib.contextmanager
+def locked(timeout=10.0):
+    """Guards the load/modify/save cycle so two CLI calls running at the same time can't
+    each read the same starting state and silently overwrite each other's change. Uses a
+    plain lock file with exclusive create (os.O_EXCL), which is atomic on every platform
+    Python runs on, so this needs no extra dependency and no platform-specific locking API."""
+    deadline = time.time() + timeout
+    while True:
+        try:
+            fd = os.open(LOCK_PATH, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            break
+        except FileExistsError:
+            if time.time() > deadline:
+                # A lock file older than the timeout almost certainly means a previous run
+                # crashed before cleaning up, not that it's still legitimately held.
+                try:
+                    if time.time() - os.path.getmtime(LOCK_PATH) > timeout:
+                        os.remove(LOCK_PATH)
+                        continue
+                except OSError:
+                    pass
+                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s "
+                         f"— is another tasks_cli.py call running?")
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        try:
+            os.remove(LOCK_PATH)
+        except OSError:
+            pass
+
+
 def load():
     with open(DATA_PATH, encoding="utf-8") as fh:
         return json.load(fh)
 
 
 def save(db):
-    with open(DATA_PATH, "w", encoding="utf-8") as fh:
+    """Writes to a temp file next to the real one, then renames it into place. os.replace()
+    is atomic on every platform Python supports, so a reader can never observe a half
+    written file — before this, save() truncated the file with mode "w" before writing the
+    new content, so a read landing in that window saw an empty, unparseable file."""
+    tmp_path = DATA_PATH + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as fh:
         json.dump(db, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
+    os.replace(tmp_path, DATA_PATH)
 
 
 def _valid_statuses(db):
@@ -337,11 +380,12 @@ def main():
     p.set_defaults(fn=cmd_render)
 
     args = ap.parse_args()
-    db = load()
-    if args.cmd == "show":
-        cmd_show(db, args)
-        return
-    args.fn(db, args)
+    with locked():
+        db = load()
+        if args.cmd == "show":
+            cmd_show(db, args)
+            return
+        args.fn(db, args)
 
 
 if __name__ == "__main__":
