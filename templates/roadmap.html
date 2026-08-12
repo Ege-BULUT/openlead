@@ -200,8 +200,10 @@
         svg.push('<circle cx="' + x + '" cy="' + top + '" r="9" fill="var(--bg)" stroke="' + stroke + '" stroke-width="1.5"/>');
       }
       svg.push('<rect x="' + (x - 62) + '" y="66" width="124" height="16" rx="2" fill="var(--bg)"/>');
+      var fullLabel = m.id + ' · ' + m.name;
       svg.push('<text x="' + x + '" y="78" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)" ' +
-               'font-family="-apple-system,sans-serif">' + esc(m.id) + ' · ' + esc(m.name) + '</text>');
+               'font-family="-apple-system,sans-serif"><title>' + esc(fullLabel) + '</title>' +
+               '<tspan class="ol-ms-label">' + esc(fullLabel) + '</tspan></text>');
       svg.push('<rect x="' + (x - 52) + '" y="128" width="104" height="14" rx="2" fill="var(--bg)"/>');
       svg.push('<text x="' + x + '" y="139" text-anchor="middle" font-size="9" font-weight="700" letter-spacing="0.04em" ' +
                'fill="' + stroke + '" font-family="-apple-system,sans-serif">' + LABEL[status] + '</text>');
@@ -225,6 +227,20 @@
     });
     svg.push('</svg>');
     wrap.innerHTML = svg.join('');
+
+    // The label box is 124px wide but nodes are only 128px apart, so a label whose
+    // rendered width exceeds ~120px runs into its neighbor. getComputedTextLength() is
+    // the real rendered width (font-family/weight-aware), so trim to that instead of
+    // guessing from character count. Full text survives in the <title> tooltip.
+    wrap.querySelectorAll('.ol-ms-label').forEach(function (tspan) {
+      var budget = 120;
+      if (tspan.getComputedTextLength() <= budget) return;
+      var s = tspan.textContent;
+      while (s.length > 1 && tspan.getComputedTextLength() > budget) {
+        s = s.slice(0, -1);
+        tspan.textContent = s + '…';
+      }
+    });
   }
 
   // ---- detail cards ----
