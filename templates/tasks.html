@@ -170,6 +170,7 @@
     <option value="medium">Medium</option>
     <option value="low">Low</option>
   </select>
+  <select id="filter-owner"><option value="">All owners</option></select>
   <span class="count" id="visible-count"></span>
 </div>
 
@@ -232,16 +233,22 @@
   var milestoneEl = document.getElementById('filter-milestone');
   var tagEl = document.getElementById('filter-tag');
   var urgencyEl = document.getElementById('filter-urgency');
+  var ownerEl = document.getElementById('filter-owner');
   var countEl = document.getElementById('visible-count');
 
-  var tags = {}, milestones = {};
+  var tags = {}, milestones = {}, owners = {};
   TASKS.forEach(function (t) {
     if (t.tag) tags[t.tag] = true;
     if (t.milestone) milestones[t.milestone] = true;
+    if (t.owner) owners[t.owner] = true;
   });
   Object.keys(tags).sort().forEach(function (p) {
     var o = document.createElement('option'); o.value = p; o.textContent = p;
     tagEl.appendChild(o);
+  });
+  Object.keys(owners).sort().forEach(function (p) {
+    var o = document.createElement('option'); o.value = p; o.textContent = p;
+    ownerEl.appendChild(o);
   });
   var qMilestone = new URLSearchParams(location.search).get('milestone');
   // A milestone with zero tasks so far won't be in the `milestones` map built above (it's
@@ -269,6 +276,7 @@
     if (milestoneEl.value && t.milestone !== milestoneEl.value) return false;
     if (tagEl.value && t.tag !== tagEl.value) return false;
     if (urgencyEl.value && t.urgency !== urgencyEl.value) return false;
+    if (ownerEl.value && t.owner !== ownerEl.value) return false;
     return true;
   }
 
@@ -460,7 +468,7 @@
     if (e.target === this) closeModal();
   });
 
-  [searchEl, milestoneEl, tagEl, urgencyEl].forEach(function (el) {
+  [searchEl, milestoneEl, tagEl, urgencyEl, ownerEl].forEach(function (el) {
     el.addEventListener('input', render);
     el.addEventListener('change', render);
   });
