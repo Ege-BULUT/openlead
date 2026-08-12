@@ -1,10 +1,30 @@
 # OpenLead
 
-A fully local project-management workspace for AI coding agents: a homepage, a milestone
-roadmap with an auto-generated diagram, a Kanban task board, and per-agent memory journals.
-Four static HTML pages, each rendered from a JSON file, edited only through a small Python
-CLI. No server, no build step, no framework, no account, no network call anywhere. Nothing
-pushes to a remote on its own — that stays your decision.
+<div align="center">
+
+```
+ ██████╗ ██████╗ ███████╗███╗   ██╗██╗     ███████╗ █████╗ ██████╗
+██╔═══██╗██╔══██╗██╔════╝████╗  ██║██║     ██╔════╝██╔══██╗██╔══██╗
+██║   ██║██████╔╝█████╗  ██╔██╗ ██║██║     █████╗  ███████║██║  ██║
+██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██║     ██╔══╝  ██╔══██║██║  ██║
+╚██████╔╝██║     ███████╗██║ ╚████║███████╗███████╗██║  ██║██████╔╝
+ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚══════╝╚═╝  ╚═╝╚═════╝
+```
+
+**A fully local roadmap, Kanban board, and agent memory for AI coding agents.**
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue.svg?style=flat-square)](#quick-start)
+[![Claude Code + OpenCode](https://img.shields.io/badge/claude--code%20%2B%20opencode-skill-6e56cf.svg?style=flat-square)](SKILL.md)
+
+</div>
+
+---
+
+A homepage, a milestone roadmap with an auto-generated diagram, a Kanban task board, and
+per-agent memory journals. Four static HTML pages, each rendered from a JSON file, edited
+only through a small Python CLI. No server, no build step, no framework, no account, no
+network call anywhere. Nothing pushes to a remote on its own — that stays your decision.
 
 Built for the world where you're the team lead and your team is a set of coding agents: you
 set direction, the agents work the board, and everything — status, blockers, who did what,
