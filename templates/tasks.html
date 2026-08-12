@@ -297,6 +297,9 @@
     var visible = 0;
     META.columns.forEach(function (colKey) {
       var colTasks = TASKS.filter(function (t) { return t.status === colKey && matches(t); });
+      colTasks.sort(function (a, b) {
+        return META.urgencyLevels.indexOf(b.urgency) - META.urgencyLevels.indexOf(a.urgency);
+      });
       visible += colTasks.length;
       var col = document.createElement('div');
       col.className = 'col col-' + colKey;
