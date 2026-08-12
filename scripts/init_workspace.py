@@ -19,7 +19,6 @@ After running, cd into the target directory and open index.html — or better, s
 """
 import argparse
 import importlib.util
-import json
 import os
 import shutil
 import sys
@@ -30,19 +29,25 @@ TEMPLATES = os.path.join(REPO_ROOT, "templates")
 
 PAGES = ("index.html", "roadmap.html", "tasks.html", "memory.html")
 DATA_FILES = ("project.json", "roadmap.json", "tasks.json", "memory.json")
-SCRIPTS = ("roadmap_cli.py", "tasks_cli.py", "memory_cli.py")
+SCRIPTS = ("project_cli.py", "roadmap_cli.py", "tasks_cli.py", "memory_cli.py")
 
 
-def _render_from_target(target, script_name):
-    """Load the CLI module from its just-copied location in the target workspace (not from
-    this repo) and call its own render(), so the page it owns reflects whatever is actually
-    in that workspace's data/ directory right now. Needed because copying the HTML template
-    on a --force re-run resets the page's embedded data block to the template's empty
-    default, even though the real data file next to it is untouched."""
+def _load_module_from_target(target, script_name):
+    """Load a CLI module from its just-copied location in the target workspace (not from
+    this repo), so its DATA_PATH/HTML_PATH resolve against that workspace, not this one."""
     path = os.path.join(target, "scripts", script_name)
     spec = importlib.util.spec_from_file_location(script_name[:-3], path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module
+
+
+def _render_from_target(target, script_name):
+    """Re-render the page a CLI owns from whatever is actually in that workspace's data/
+    directory right now. Needed because copying the HTML template on a --force re-run
+    resets the page's embedded data block to the template's empty default, even though the
+    real data file next to it is untouched."""
+    module = _load_module_from_target(target, script_name)
     module.render(module.load())
 
 
@@ -84,31 +89,18 @@ def main():
     for script in ("roadmap_cli.py", "tasks_cli.py", "memory_cli.py"):
         _render_from_target(target, script)
 
-    project_path = os.path.join(target, "data", "project.json")
-    project = json.load(open(project_path, encoding="utf-8"))
+    # project.json/index.html go through project_cli.py's own load/save/render, the same
+    # thing running `project_cli.py update` by hand would do, instead of a second copy of
+    # that logic living here too.
+    project_cli = _load_module_from_target(target, "project_cli.py")
+    project = project_cli.load()
     project["name"] = args.name
     if args.tagline:
         project["tagline"] = args.tagline
     if args.pitch:
         project["pitch"] = args.pitch
-    with open(project_path, "w", encoding="utf-8") as fh:
-        json.dump(project, fh, indent=2, ensure_ascii=False)
-        fh.write("\n")
-
-    # index.html's project-data script block starts as the template default — sync it now so
-    # the homepage reflects --name/--tagline/--pitch immediately, without a separate render step.
-    index_path = os.path.join(target, "index.html")
-    html = open(index_path, encoding="utf-8").read()
-    import re
-    # See the matching comment in each CLI's render() for why: json.dumps() doesn't escape
-    # "<", so a name/tagline/pitch containing "</script>" would otherwise corrupt the page.
-    payload = json.dumps(project, indent=2, ensure_ascii=False).replace("<", "\\u003c")
-    html, n = re.subn(
-        r'(<script id="project-data" type="application/json">)(.*?)(</script>)',
-        lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3),
-        html, count=1, flags=re.S)
-    if n:
-        open(index_path, "w", encoding="utf-8").write(html)
+    project_cli.save(project)
+    project_cli.render(project)
 
     print(f"Created OpenLead workspace at {target}")
     print(f"  {len(PAGES)} pages, {len(SCRIPTS)} CLI scripts, {len(DATA_FILES)} data files")
