@@ -13,6 +13,7 @@ new one for a distinct thread of work rather than piling everything into one ent
   memory_cli.py update M-0001 [--name "..."] [--owner "..."] [--content-file PATH]
       # --content-file here REPLACES the whole body — use `append` unless you mean to overwrite.
   memory_cli.py contributor M-0001 --add "..."
+  memory_cli.py delete M-0001
   memory_cli.py render          # regenerate memory.html's embedded data block from memory.json
 
 Every mutating command re-renders memory.html automatically, so the journal viewer is never
@@ -176,6 +177,14 @@ def cmd_contributor(db, args):
     print(f'updated contributors on {e["id"]}')
 
 
+def cmd_delete(db, args):
+    e = _find(db, args.entry_id)
+    db["entries"].remove(e)
+    save(db)
+    render(db)
+    print(f'deleted {e["id"]}')
+
+
 def render(db):
     """Regenerate ONLY the embedded <script id="journal-data"> JSON block in memory.html —
     never touches the surrounding page chrome."""
@@ -237,6 +246,10 @@ def main():
     p.add_argument("entry_id")
     p.add_argument("--add", required=True)
     p.set_defaults(fn=cmd_contributor)
+
+    p = sub.add_parser("delete")
+    p.add_argument("entry_id")
+    p.set_defaults(fn=cmd_delete)
 
     p = sub.add_parser("render"); p.set_defaults(fn=cmd_render)
 

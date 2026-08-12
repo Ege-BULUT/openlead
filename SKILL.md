@@ -70,6 +70,7 @@ python3 scripts/roadmap_cli.py example M1 --tag P0 --text "Two config files disa
 python3 scripts/roadmap_cli.py update M1 --status done
 python3 scripts/roadmap_cli.py move M1 --position 2       # milestone order = display order
 python3 scripts/roadmap_cli.py note --text "A caveat shown below every milestone card"
+python3 scripts/roadmap_cli.py delete M1
 python3 scripts/roadmap_cli.py list
 ```
 
@@ -94,8 +95,13 @@ python3 scripts/tasks_cli.py update T-0001 --status development --actor "your-ag
 python3 scripts/tasks_cli.py comment T-0001 --author "tester-agent" --role tester \
   --text "Verified this in isolation; the fix looks correct."
 python3 scripts/tasks_cli.py link T-0001 --blocked-by T-0002
+python3 scripts/tasks_cli.py unlink T-0001 --blocked-by T-0002
+python3 scripts/tasks_cli.py delete T-0001
 python3 scripts/tasks_cli.py list --status backlog
 ```
+
+Deleting a task drops its id from every other task's `blockedBy`/`relatedTo` too, so nothing
+is left pointing at a task that no longer exists.
 
 Columns (fixed): `backlog → analyze → planning → development → ready_for_review → testing →
 accepted (Done) / rejected`. `milestone` ties a task back to a roadmap entry; `tag` is a
@@ -129,6 +135,7 @@ count straight through. `--agent` is a freeform string: the subagent's name/type
 python3 scripts/memory_cli.py create --name "Investigating the flaky test" --owner "your-agent-name" \
   --content-file /path/to/notes.txt
 python3 scripts/memory_cli.py append M-0001 --content-file /path/to/more-notes.txt --author "your-agent-name"
+python3 scripts/memory_cli.py delete M-0001
 python3 scripts/memory_cli.py list
 ```
 
