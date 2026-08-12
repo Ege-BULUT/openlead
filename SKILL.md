@@ -32,12 +32,21 @@ page again — but prefer just using the CLI verb that does what you want.
 
 ## Set up a new workspace
 
+`init_workspace.py` lives inside wherever this skill/repo is installed, not inside the
+project you're setting a workspace up for, so use its full path, not a bare relative one.
+If this skill is installed at `~/.claude/skills/openlead`, for example:
+
 ```bash
-python3 scripts/init_workspace.py /path/to/project/openlead-workspace \
+python3 ~/.claude/skills/openlead/scripts/init_workspace.py /path/to/project/openlead-workspace \
   --name "My Project" \
   --tagline "One-line description shown on the homepage" \
   --pitch "One paragraph shown below the nav cards (optional)"
 ```
+
+(Adjust the first path to wherever you actually see this file — a project-local
+`.claude/skills/openlead`, a plain checkout of the repo, wherever it is.) Everything after
+`init_workspace.py` in the commands below this point assumes you've `cd`'d into the target
+workspace it just created, where `scripts/`, relative, is correct.
 
 This copies the four HTML pages, the four CLIs, and empty `data/*.json` into the target
 directory. Re-running with `--force` re-copies the HTML/scripts (safe to do — it never
@@ -66,11 +75,11 @@ python3 scripts/roadmap_cli.py add --name "Duplicate cleanup" --status next \
   --description "Collapse every place the same rule lives twice into one source of truth." \
   --why "Lowest risk, and it's the drift that makes every later milestone harder to verify." \
   --chip "9 tasks" --chip "Effort: small"
-python3 scripts/roadmap_cli.py example M1 --tag P0 --text "Two config files disagree"
-python3 scripts/roadmap_cli.py update M1 --status done
-python3 scripts/roadmap_cli.py move M1 --position 2       # milestone order = display order
+python3 scripts/roadmap_cli.py example M0 --tag P0 --text "Two config files disagree"
+python3 scripts/roadmap_cli.py update M0 --status done
+python3 scripts/roadmap_cli.py move M0 --position 2       # milestone order = display order
 python3 scripts/roadmap_cli.py note --text "A caveat shown below every milestone card"
-python3 scripts/roadmap_cli.py delete M1
+python3 scripts/roadmap_cli.py delete M0
 python3 scripts/roadmap_cli.py list
 ```
 
