@@ -40,12 +40,31 @@ ROOT = os.path.dirname(HERE)
 DATA_PATH = os.path.join(ROOT, "data", "tasks.json")
 HTML_PATH = os.path.join(ROOT, "tasks.html")
 LOCK_PATH = DATA_PATH + ".lock"
+ROADMAP_DATA_PATH = os.path.join(ROOT, "data", "roadmap.json")
 VALID_URGENCY = ("low", "medium", "high", "critical")
 VALID_ROLES = ("tester", "engineer", "reviewer", "human")
 
 
 def _now():
     return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _warn_if_unknown_milestone(milestone_id):
+    """A task's milestone is a soft reference into a different file, not another task, so
+    this warns instead of refusing outright — roadmap.json might not exist in a bare setup,
+    or the milestone might be added moments later. It's still worth catching the common typo
+    case (a milestone id that will never resolve to anything on the roadmap page)."""
+    if not milestone_id or not os.path.exists(ROADMAP_DATA_PATH):
+        return
+    try:
+        roadmap = json.load(open(ROADMAP_DATA_PATH, encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    known = {m["id"] for m in roadmap.get("milestones", [])}
+    if milestone_id not in known:
+        print(f"WARN: milestone {milestone_id!r} isn't in roadmap.json yet — the task will "
+              f"still be created, but its \"Tasks →\" link won't show up anywhere until a "
+              f"milestone with that id exists", file=sys.stderr)
 
 
 @contextlib.contextmanager
@@ -153,9 +172,19 @@ def cmd_add(db, args):
         sys.exit(f"invalid status {status!r} — one of {_valid_statuses(db)}")
     if args.urgency not in VALID_URGENCY:
         sys.exit(f"invalid urgency {args.urgency!r} — one of {VALID_URGENCY}")
+    new_id = _new_id(db)
+    blocked_by = args.blocked_by or []
+    related_to = args.related_to or []
+    for other_id in blocked_by + related_to:
+        if other_id == new_id:
+            sys.exit(f"a task can't block or relate to itself")
+        _find(db, other_id)  # exits with a clear error if it doesn't exist
+    if args.milestone:
+        _warn_if_unknown_milestone(args.milestone)
+
     now = _now()
     task = {
-        "id": _new_id(db),
+        "id": new_id,
         "title": args.title,
         "description": args.desc or "",
         "status": status,
@@ -163,8 +192,8 @@ def cmd_add(db, args):
         "tag": args.tag or None,
         "milestone": args.milestone or None,
         "refs": args.ref or [],
-        "blockedBy": args.blocked_by or [],
-        "relatedTo": args.related_to or [],
+        "blockedBy": blocked_by,
+        "relatedTo": related_to,
         "owner": args.owner or "",
         "createdAt": now,
         "updatedAt": now,
@@ -209,6 +238,8 @@ def cmd_update(db, args):
     if args.milestone is not None:
         if args.milestone != t.get("milestone"):
             changes.append(f'milestone: {t.get("milestone") or "(none)"} -> {args.milestone}')
+        if args.milestone:
+            _warn_if_unknown_milestone(args.milestone)
         t["milestone"] = args.milestone
     if changes:
         _log_event(t, "updated", "; ".join(changes), args.actor)
@@ -238,6 +269,8 @@ def cmd_comment(db, args):
 
 def cmd_link(db, args):
     t = _find(db, args.task_id)
+    if args.blocked_by == t["id"] or args.related_to == t["id"]:
+        sys.exit("a task can't block or relate to itself")
     if args.blocked_by:
         _find(db, args.blocked_by)  # must exist
         if args.blocked_by not in t["blockedBy"]:
