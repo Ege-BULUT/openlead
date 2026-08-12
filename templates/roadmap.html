@@ -200,14 +200,14 @@
         svg.push('<circle cx="' + x + '" cy="' + top + '" r="9" fill="var(--bg)" stroke="' + stroke + '" stroke-width="1.5"/>');
       }
       svg.push('<rect x="' + (x - 62) + '" y="66" width="124" height="16" rx="2" fill="var(--bg)"/>');
-      svg.push('<text x="' + x + '" y="78" text-anchor="middle" font-size="12" font-weight="700" fill="#1b1b18" ' +
+      svg.push('<text x="' + x + '" y="78" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)" ' +
                'font-family="-apple-system,sans-serif">' + esc(m.id) + ' · ' + esc(m.name) + '</text>');
       svg.push('<rect x="' + (x - 52) + '" y="128" width="104" height="14" rx="2" fill="var(--bg)"/>');
       svg.push('<text x="' + x + '" y="139" text-anchor="middle" font-size="9" font-weight="700" letter-spacing="0.04em" ' +
                'fill="' + stroke + '" font-family="-apple-system,sans-serif">' + LABEL[status] + '</text>');
       if (m.chips && m.chips[0]) {
         svg.push('<rect x="' + (x - 52) + '" y="146" width="104" height="14" rx="2" fill="var(--bg)"/>');
-        svg.push('<text x="' + x + '" y="157" text-anchor="middle" font-size="9" fill="#6b6b63" ' +
+        svg.push('<text x="' + x + '" y="157" text-anchor="middle" font-size="9" fill="var(--sub)" ' +
                  'font-family="-apple-system,sans-serif">' + esc(m.chips[0]) + '</text>');
       }
     });
@@ -215,12 +215,12 @@
     var legendY = 200;
     svg.push('<line x1="' + left + '" y1="' + legendY + '" x2="' + (left + gap * Math.max(0, MS.length - 1)) +
               '" y2="' + legendY + '" stroke="#9a9890" stroke-width="0.8" opacity="0.35"/>');
-    svg.push('<text x="' + left + '" y="' + (legendY + 22) + '" font-size="8" letter-spacing="0.12em" fill="#6b6b63" ' +
+    svg.push('<text x="' + left + '" y="' + (legendY + 22) + '" font-size="8" letter-spacing="0.12em" fill="var(--sub)" ' +
              'font-family=\'SF Mono\',monospace>LEGEND</text>');
     [['Done', STROKE.done], ['Up next', STROKE.next], ['Planned', STROKE.planned]].forEach(function (pair, i) {
       var lx = left + 120 + i * 130;
       svg.push('<circle cx="' + lx + '" cy="' + (legendY + 19) + '" r="6" fill="' + pair[1] + '22" stroke="' + pair[1] + '" stroke-width="1.5"/>');
-      svg.push('<text x="' + (lx + 14) + '" y="' + (legendY + 22) + '" font-size="10" fill="#1b1b18" ' +
+      svg.push('<text x="' + (lx + 14) + '" y="' + (legendY + 22) + '" font-size="10" fill="var(--ink)" ' +
                'font-family="-apple-system,sans-serif">' + pair[0] + '</text>');
     });
     svg.push('</svg>');
