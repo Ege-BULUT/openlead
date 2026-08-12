@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Memory — OpenLead Workspace</title>
+<title>Agent Memory · OpenLead Workspace</title>
 <style>
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --ink: #1b1b18; --sub: #6b6b63;
@@ -106,7 +106,7 @@
 <header>
   <div class="kicker">Agent Memory</div>
   <h1>Journals</h1>
-  <p class="scope">Each journal is a log an agent (or a human) owns and names — working notes, decisions,
+  <p class="scope">Each journal is a log an agent (or a human) owns and names: working notes, decisions,
     dead ends, handoffs. Read the relevant one before redoing analysis someone already did. Persisted through
     <code>scripts/memory_cli.py</code>; this page is the rendered view.</p>
 </header>
@@ -121,7 +121,7 @@
         <button class="btn" id="np-build">Build CLI command</button>
         <button class="btn secondary" id="np-cancel">Cancel</button>
       </div>
-      <div class="cmdbox" id="np-cmdbox"><pre id="np-cmd"></pre><p class="hint">Write your content to a file first, then run this (it reads <code>--content-file</code>). Re-open this page after — it re-renders automatically.</p></div>
+      <div class="cmdbox" id="np-cmdbox"><pre id="np-cmd"></pre><p class="hint">Write your content to a file first, then run this (it reads <code>--content-file</code>). Re-open this page after, it re-renders automatically.</p></div>
     </div>
     <div id="jlist"></div>
   </div>
@@ -132,12 +132,12 @@
   <strong>How this journal works</strong>
   <ul>
     <li>Data lives in <code>data/memory.json</code>. <code>scripts/memory_cli.py render</code> regenerates this
-      page from it — every <code>create</code>/<code>append</code>/<code>update</code>/<code>contributor</code>
+      page from it. Every <code>create</code>/<code>append</code>/<code>update</code>/<code>contributor</code>
       call re-renders automatically.</li>
-    <li>The content pane is editable in-browser for quick edits, but nothing here saves itself — there's no
+    <li>The content pane is editable in-browser for quick edits, but nothing here saves itself; there's no
       server. Use <b>Copy content</b>, save it to a file, then <code>memory_cli.py append</code> (adds a
-      timestamped section — the normal case) or <code>update --content-file</code> (replaces the whole body).</li>
-    <li>One journal per distinct thread of work, named by whoever owns it — don't pile unrelated work into one
+      timestamped section, the normal case) or <code>update --content-file</code> (replaces the whole body).</li>
+    <li>One journal per distinct thread of work, named by whoever owns it. Don't pile unrelated work into one
       entry just because it already exists.</li>
   </ul>
 </footer>
@@ -145,7 +145,7 @@
 <script id="journal-data" type="application/json">
 {
   "_meta": {
-    "description": "Agent/human journal entries. Edit via scripts/memory_cli.py, not by hand — then run its `render` command to update memory.html. Fully local: nothing here is ever pushed anywhere.",
+    "description": "Agent/human journal entries. Edit via scripts/memory_cli.py, not by hand. Run its `render` command afterward to update memory.html. Fully local, nothing here is ever pushed anywhere.",
     "entryIdPrefix": "M-",
     "nextEntrySeq": 1
   },
@@ -203,7 +203,7 @@
       '<div class="d-head"><div><div class="d-id">' + esc(e.id) + '</div><h2>' + esc(e.name) + '</h2></div></div>' +
       '<div class="metarow">' +
         '<span><b>Owner</b> ' + esc(e.owner) + '</span>' +
-        '<span><b>Contributors</b> ' + esc((e.contributors || []).join(', ') || '—') + '</span>' +
+        '<span><b>Contributors</b> ' + esc((e.contributors || []).join(', ') || 'none') + '</span>' +
         '<span><b>Created</b> ' + esc(fmtDate(e.createdAt)) + '</span>' +
         '<span><b>Updated</b> ' + esc(fmtDate(e.updatedAt)) + '</span>' +
       '</div>' +

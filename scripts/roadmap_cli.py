@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""roadmap_cli.py — the read/write interface to this workspace's roadmap.
+"""roadmap_cli.py: the read/write interface to this workspace's roadmap.
 
 Fully local: this touches only files under this workspace's data/ directory. Agents (and
 humans) use this instead of hand-editing roadmap.json, so ids and the rendered roadmap.html
@@ -14,20 +14,20 @@ humans) use this instead of hand-editing roadmap.json, so ids and the rendered r
   roadmap_cli.py example M1 --tag P0 --text "Two config files disagree on the source of truth"
       # adds one bullet to a milestone's illustrative example list
   roadmap_cli.py chip M1 --text "Effort: small"
-      # adds one small plain-text badge/chip to a milestone's footer (effort, risk, a count —
+      # adds one small plain-text badge/chip to a milestone's footer (effort, risk, a count,
       # whatever's useful). Every milestone card also gets an automatic "Tasks →" link to
-      # tasks.html?milestone=<id> for free — you don't need a chip for that.
+      # tasks.html?milestone=<id> for free, so you don't need a chip for that.
   roadmap_cli.py move M1 --position 2
       # milestone order is display order; 0-based position, moves M1 to index 2
   roadmap_cli.py delete M1
       # if any tasks still have M1 as their milestone, prints their ids as a heads up but
-      # doesn't touch them — a task's milestone reference is soft, see tasks_cli.py
+      # doesn't touch them. A task's milestone reference is soft, see tasks_cli.py
   roadmap_cli.py note --text "A provenance caveat shown below all milestone cards"
   roadmap_cli.py intro --text "One-paragraph subtitle shown under the Roadmap H1"
   roadmap_cli.py render          # regenerate roadmap.html's embedded data block from roadmap.json
 
 Status is exactly one of: done, next, planned. Exactly one milestone should normally be "next"
-(what the diagram highlights as the focal, up-next node) — this CLI doesn't enforce that, it's
+(what the diagram highlights as the focal, up-next node). This CLI doesn't enforce that, it's
 a convention, not a constraint, because a brief moment with zero or two "next" milestones during
 a transition isn't actually invalid.
 
@@ -70,8 +70,8 @@ def locked(timeout=10.0):
                         continue
                 except OSError:
                     pass
-                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s "
-                         f"— is another roadmap_cli.py call running?")
+                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s. "
+                         f"Is another roadmap_cli.py call running?")
             time.sleep(0.05)
     try:
         yield
@@ -127,7 +127,7 @@ def cmd_show(db, args):
 def cmd_add(db, args):
     status = args.status or "planned"
     if status not in VALID_STATUS:
-        sys.exit(f"invalid status {status!r} — one of {VALID_STATUS}")
+        sys.exit(f"invalid status {status!r}, must be one of {VALID_STATUS}")
     m = {
         "id": _new_id(db),
         "name": args.name,
@@ -147,7 +147,7 @@ def cmd_update(db, args):
     m = _find(db, args.milestone_id)
     if args.status:
         if args.status not in VALID_STATUS:
-            sys.exit(f"invalid status {args.status!r} — one of {VALID_STATUS}")
+            sys.exit(f"invalid status {args.status!r}, must be one of {VALID_STATUS}")
         m["status"] = args.status
     if args.name:
         m["name"] = args.name
@@ -199,7 +199,7 @@ def cmd_delete(db, args):
         except (OSError, json.JSONDecodeError):
             referring = []
         if referring:
-            print(f'deleted {m["id"]} — heads up, {len(referring)} task(s) still have this as '
+            print(f'deleted {m["id"]}. Heads up, {len(referring)} task(s) still have this as '
                   f'their milestone: {", ".join(referring)}')
             return
     print(f'deleted {m["id"]}')
@@ -220,11 +220,11 @@ def cmd_intro(db, args):
 
 
 def render(db):
-    """Regenerate ONLY the embedded <script id="roadmap-data"> JSON block in roadmap.html —
-    never touches the surrounding page chrome. roadmap.html's own JS draws the milestone-track
+    """Regenerate ONLY the embedded <script id="roadmap-data"> JSON block in roadmap.html.
+    Never touches the surrounding page chrome. roadmap.html's own JS draws the milestone-track
     diagram AND the detail cards from this same data, so one edit updates both."""
     if not os.path.exists(HTML_PATH):
-        print(f"WARN: {HTML_PATH} not found — skipping render", file=sys.stderr)
+        print(f"WARN: {HTML_PATH} not found, skipping render", file=sys.stderr)
         return
     html = open(HTML_PATH, encoding="utf-8").read()
     # json.dumps() doesn't escape "<", so a name/description/note containing "</script>" would
@@ -238,7 +238,7 @@ def render(db):
     )
     new_html, n = pattern.subn(lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3), html, count=1)
     if n == 0:
-        sys.exit(f'no <script id="roadmap-data"> block found in {HTML_PATH} — cannot render')
+        sys.exit(f'no <script id="roadmap-data"> block found in {HTML_PATH}, cannot render')
     open(HTML_PATH, "w", encoding="utf-8").write(new_html)
 
 

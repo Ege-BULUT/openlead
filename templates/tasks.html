@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Task Board — OpenLead Workspace</title>
+<title>Task Board · OpenLead Workspace</title>
 <style>
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --ink: #1b1b18; --sub: #6b6b63;
@@ -187,11 +187,11 @@
   <strong>How this board works</strong>
   <ul>
     <li>The task board's data lives in <code>data/tasks.json</code>. This page renders a read view from it via
-      <code>scripts/tasks_cli.py render</code> — every mutating command re-renders automatically.</li>
-    <li>Fully local — no server, no fetch, no network call anywhere on this page. The board data is embedded
+      <code>scripts/tasks_cli.py render</code>. Every mutating command re-renders automatically.</li>
+    <li>Fully local. No server, no fetch, no network call anywhere on this page. The board data is embedded
       directly in this file at render time.</li>
     <li>Drafting a comment or logging a session in this UI does not save anywhere by itself (there's nowhere
-      local-only to save it to) — it builds the exact CLI command for you to run, which is the one thing that
+      local-only to save it to). It builds the exact CLI command for you to run, which is the one thing that
       actually persists it.</li>
     <li>Open questions and working notes belong in <a href="memory.html">agent memory</a>, not in a task
       comment thread.</li>
@@ -201,7 +201,7 @@
 <script id="board-data" type="application/json">
 {
   "_meta": {
-    "description": "Task board data. Edit via scripts/tasks_cli.py, not by hand — then run its `render` command to update tasks.html. Fully local: nothing here is ever pushed anywhere.",
+    "description": "Task board data. Edit via scripts/tasks_cli.py, not by hand. Run its `render` command afterward to update tasks.html. Fully local, nothing here is ever pushed anywhere.",
     "columns": ["backlog", "analyze", "planning", "development", "ready_for_review", "testing", "accepted", "rejected"],
     "columnLabels": {
       "backlog": "Backlog",
@@ -255,8 +255,8 @@
   var qMilestone = new URLSearchParams(location.search).get('milestone');
   // A milestone with zero tasks so far won't be in the `milestones` map built above (it's
   // only populated from tasks that already have one), but the filter should still apply,
-  // showing a correctly empty board rather than silently falling back to "no filter" —
-  // add it as an option up front if it's not there yet, so setting .value below actually
+  // showing a correctly empty board rather than silently falling back to "no filter".
+  // Add it as an option up front if it's not there yet, so setting .value below actually
   // takes (a <select> ignores being set to a value with no matching <option>).
   if (qMilestone && !milestones[qMilestone]) milestones[qMilestone] = true;
   Object.keys(milestones).sort().forEach(function (ms) {
@@ -291,7 +291,7 @@
         '</div>' +
         '<h3>' + esc(t.title) + '</h3>' +
         '<div class="card-meta">' +
-          '<span class="urg ' + esc(t.urgency || 'medium') + '">' + esc(t.urgency || '—') + '</span>' +
+          '<span class="urg ' + esc(t.urgency || 'medium') + '">' + esc(t.urgency || 'none') + '</span>' +
           (t.milestone ? '<span class="mschip">' + esc(t.milestone) + '</span>' : '') +
           (t.tag ? '<span class="tagchip">' + esc(t.tag) + '</span>' : '') +
         '</div>' +
@@ -356,13 +356,13 @@
     }).join('') || '<p class="hint">No comments yet.</p>';
     var blockedBy = (t.blockedBy || []).map(function (bid) {
       return '<span class="chiplink" data-jump="' + esc(bid) + '">' + esc(bid) +
-             (byId[bid] ? ' — ' + esc(byId[bid].title) : ' (unknown)') + '</span>';
+             (byId[bid] ? ' · ' + esc(byId[bid].title) : ' (unknown)') + '</span>';
     }).join(' ') || '<span class="hint">none</span>';
     var relatedTo = (t.relatedTo || []).map(function (rid) {
       return '<span class="chiplink" data-jump="' + esc(rid) + '">' + esc(rid) +
-             (byId[rid] ? ' — ' + esc(byId[rid].title) : ' (unknown)') + '</span>';
+             (byId[rid] ? ' · ' + esc(byId[rid].title) : ' (unknown)') + '</span>';
     }).join(' ') || '<span class="hint">none</span>';
-    var refs = (t.refs || []).map(esc).join(', ') || '—';
+    var refs = (t.refs || []).map(esc).join(', ') || 'none';
 
     var sessions = t.sessions || [];
     var totalSec = sessions.reduce(function (s, x) { return s + (x.durationSec || 0); }, 0);
@@ -372,8 +372,8 @@
       sessionsHtml = '<table class="sessions"><tr><th>When</th><th>Agent</th><th>Duration</th><th>Tokens</th><th>Summary</th></tr>' +
         sessions.map(function (s) {
           return '<tr><td>' + esc(s.ts) + '</td><td>' + esc(s.agent) + '</td>' +
-            '<td>' + (s.durationSec != null ? Math.round(s.durationSec) + 's' : '—') + '</td>' +
-            '<td>' + (s.tokens != null ? s.tokens.toLocaleString() : '—') + '</td>' +
+            '<td>' + (s.durationSec != null ? Math.round(s.durationSec) + 's' : 'none') + '</td>' +
+            '<td>' + (s.tokens != null ? s.tokens.toLocaleString() : 'none') + '</td>' +
             '<td>' + esc(s.summary || '') + '</td></tr>';
         }).join('') + '</table>' +
         '<div class="sessions-total">' + sessions.length + ' session' + (sessions.length===1?'':'s') +
@@ -386,14 +386,14 @@
       logHtml = log.map(function (l) {
         return '<div class="logentry"><span class="lt">' + esc(l.ts) + '</span>' +
           '<span class="lev">' + esc(l.event) + '</span>' +
-          '<span class="ld">' + esc(l.detail || '') + '<span class="la"> — ' + esc(l.actor || '') + '</span></span></div>';
+          '<span class="ld">' + esc(l.detail || '') + '<span class="la"> · ' + esc(l.actor || '') + '</span></span></div>';
       }).join('');
     }
 
     m.innerHTML =
       '<div class="m-head"><div><div class="m-id">' + esc(t.id) + '</div><h2>' + esc(t.title) + '</h2></div>' +
         '<button class="closebtn" id="modal-close">&times;</button></div>' +
-      '<div class="m-row"><span class="urg ' + esc(t.urgency||'medium') + '">' + esc(t.urgency||'—') + '</span>' +
+      '<div class="m-row"><span class="urg ' + esc(t.urgency||'medium') + '">' + esc(t.urgency||'none') + '</span>' +
         (t.milestone ? '<span class="mschip">' + esc(t.milestone) + '</span>' : '') +
         (t.tag ? '<span class="tagchip">' + esc(t.tag) + '</span>' : '') +
         '<span class="k">status:</span> ' + esc(META.columnLabels[t.status] || t.status) +

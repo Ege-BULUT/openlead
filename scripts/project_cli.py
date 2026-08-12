@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""project_cli.py — the read/write interface to this workspace's project identity.
+"""project_cli.py: the read/write interface to this workspace's project identity.
 
 Fully local: this touches only files under this workspace's data/ directory. This is the
 one thing missing from the original three CLIs: name, tagline and pitch drive the homepage
@@ -48,8 +48,8 @@ def locked(timeout=10.0):
                         continue
                 except OSError:
                     pass
-                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s "
-                         f"— is another project_cli.py call running?")
+                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s. "
+                         f"Is another project_cli.py call running?")
             time.sleep(0.05)
     try:
         yield
@@ -90,10 +90,10 @@ def cmd_update(project, args):
 
 
 def render(project):
-    """Regenerate ONLY the embedded <script id="project-data"> JSON block in index.html —
-    never touches the surrounding page chrome."""
+    """Regenerate ONLY the embedded <script id="project-data"> JSON block in index.html.
+    Never touches the surrounding page chrome."""
     if not os.path.exists(HTML_PATH):
-        print(f"WARN: {HTML_PATH} not found — skipping render", file=sys.stderr)
+        print(f"WARN: {HTML_PATH} not found, skipping render", file=sys.stderr)
         return
     html = open(HTML_PATH, encoding="utf-8").read()
     # json.dumps() doesn't escape "<", so a name/tagline/pitch containing "</script>" would
@@ -105,7 +105,7 @@ def render(project):
     )
     new_html, n = pattern.subn(lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3), html, count=1)
     if n == 0:
-        sys.exit(f'no <script id="project-data"> block found in {HTML_PATH} — cannot render')
+        sys.exit(f'no <script id="project-data"> block found in {HTML_PATH}, cannot render')
     open(HTML_PATH, "w", encoding="utf-8").write(new_html)
 
 
