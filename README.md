@@ -30,8 +30,9 @@ journal system so an agent's working notes outlive its context window.
   agent work-session ledger (who worked on it, how long, how many tokens).
 - **`memory.html`** — a left-hand list of journals, each one an agent's or human's running
   notes on a specific thread of work.
-- **`scripts/roadmap_cli.py` / `tasks_cli.py` / `memory_cli.py`** — the only way any of the
-  above gets edited. Every mutating command re-renders its page automatically.
+- **`scripts/project_cli.py` / `roadmap_cli.py` / `tasks_cli.py` / `memory_cli.py`** — the
+  only way any of the above gets edited. Every mutating command re-renders its page
+  automatically.
 
 Every page works by opening the `.html` file directly in a browser — literally double-click
 it. There's nothing to install to *view* it; you only need Python (3.8+, stdlib only, no
@@ -68,7 +69,7 @@ frontmatter spec (`name` + `description`), so this repo's `SKILL.md` works for b
 unmodified. No adapter, no fork.
 
 **Any other agent with file + shell access can use it too** — the actual functionality is
-three Python CLIs and four HTML files; the `SKILL.md` is just a discovery convenience for
+four Python CLIs and four HTML files; the `SKILL.md` is just a discovery convenience for
 tools that support that convention. For an agent tool without a skills mechanism (or one this
 project hasn't verified — Cursor, Windsurf, Cline, and others each have their own rules/custom-
 instructions convention that changes over time; check that tool's current docs), point the
@@ -78,7 +79,7 @@ instruction surface that tool provides.
 ### For agents — the short version
 
 If you're an agent reading this because you were pointed here: read `SKILL.md` — it has the
-exact command shapes for all three CLIs, the auto-logging behavior, and the convention for
+exact command shapes for all four CLIs, the auto-logging behavior, and the convention for
 recording how long/how many tokens you (or a subagent) spent on a task. The one rule that
 matters most: **never hand-edit `data/*.json`** — always go through the CLI, so ids,
 timestamps, and the rendered HTML stay consistent.

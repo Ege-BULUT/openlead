@@ -39,14 +39,25 @@ python3 scripts/init_workspace.py /path/to/project/openlead-workspace \
   --pitch "One paragraph shown below the nav cards (optional)"
 ```
 
-This copies the four HTML pages, the three CLIs, and empty `data/*.json` into the target
+This copies the four HTML pages, the four CLIs, and empty `data/*.json` into the target
 directory. Re-running with `--force` re-copies the HTML/scripts (safe to do — it never
 touches existing `data/*.json`, so an upgrade can't destroy real project data).
 
-## The three CLIs
+## The four CLIs
 
 Run `python3 scripts/<name>.py --help` (and `<subcommand> --help`) for the full flag list —
 this section is the shape, not the reference.
+
+### `project_cli.py` — the project's name, tagline and pitch
+
+```bash
+python3 scripts/project_cli.py update --tagline "New one-line description"
+python3 scripts/project_cli.py show
+```
+
+This is what drives the homepage. `init_workspace.py` sets it once from `--name`/`--tagline`/
+`--pitch` when the workspace is first scaffolded; use this CLI for any change after that,
+rather than re-running `init_workspace.py --force` just to rename something.
 
 ### `roadmap_cli.py` — milestones
 
@@ -138,7 +149,7 @@ an earlier session) may have already worked through it.
   it never touches page chrome (CSS, layout, JS). This means you (or the project owner) can
   freely hand-edit a page's HTML/CSS/JS and it survives every future `render()` call, as long
   as you don't rename or remove that one `<script id="...">` tag.
-- All three CLIs follow the same shape: `load()` → mutate → `save()` → `render()`. If you add a
+- All four CLIs follow the same shape: `load()` → mutate → `save()` → `render()`. If you add a
   new page, follow this pattern rather than inventing a new persistence mechanism — it's what
   keeps the whole system predictable across pages.
 - Nothing here calls out to a network. If you're tempted to add a "sync to a real project
