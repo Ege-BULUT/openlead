@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tasks_cli.py — the read/write interface to this workspace's task board.
+"""tasks_cli.py: the read/write interface to this workspace's task board.
 
 Fully local: this touches only files under this workspace's data/ directory. Never call
 anything network-facing from here. Agents (and humans) use this instead of hand-editing
@@ -21,13 +21,13 @@ tasks.json, so ids, timestamps, and the rendered tasks.html stay consistent.
   tasks_cli.py session T-0001 --agent "code-reviewer" [--duration-sec 340] [--tokens 12345]
                    [--summary "..."] [--started-at ISO] [--ended-at ISO]
       # records one agent's work session on a task: who, how long, how many tokens, what happened.
-      # Call this whenever a subagent finishes a piece of work on a task — the Agent tool's
+      # Call this whenever a subagent finishes a piece of work on a task. The Agent tool's
       # completion notification already reports duration_ms/subagent_tokens for exactly this.
   tasks_cli.py render          # regenerate tasks.html's embedded data block from tasks.json
 
 Every mutating command (add/update/comment/link/session) re-renders tasks.html automatically
-and appends a timestamped entry to the task's own `log[]` — a full audit trail of what changed,
-who changed it, and when — visible in the task's detail view. `render` alone is only needed if
+and appends a timestamped entry to the task's own `log[]`, a full audit trail of what changed,
+who changed it, and when, visible in the task's detail view. `render` alone is only needed if
 tasks.json was hand-edited.
 """
 import argparse
@@ -55,7 +55,7 @@ def _now():
 
 def _warn_if_unknown_milestone(milestone_id):
     """A task's milestone is a soft reference into a different file, not another task, so
-    this warns instead of refusing outright — roadmap.json might not exist in a bare setup,
+    this warns instead of refusing outright. roadmap.json might not exist in a bare setup,
     or the milestone might be added moments later. It's still worth catching the common typo
     case (a milestone id that will never resolve to anything on the roadmap page)."""
     if not milestone_id or not os.path.exists(ROADMAP_DATA_PATH):
@@ -66,7 +66,7 @@ def _warn_if_unknown_milestone(milestone_id):
         return
     known = {m["id"] for m in roadmap.get("milestones", [])}
     if milestone_id not in known:
-        print(f"WARN: milestone {milestone_id!r} isn't in roadmap.json yet — the task will "
+        print(f"WARN: milestone {milestone_id!r} isn't in roadmap.json yet. The task will "
               f"still be created, but its \"Tasks →\" link won't show up anywhere until a "
               f"milestone with that id exists", file=sys.stderr)
 
@@ -93,8 +93,8 @@ def locked(timeout=10.0):
                         continue
                 except OSError:
                     pass
-                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s "
-                         f"— is another tasks_cli.py call running?")
+                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s. "
+                         f"Is another tasks_cli.py call running?")
             time.sleep(0.05)
     try:
         yield
@@ -113,7 +113,7 @@ def load():
 def save(db):
     """Writes to a temp file next to the real one, then renames it into place. os.replace()
     is atomic on every platform Python supports, so a reader can never observe a half
-    written file — before this, save() truncated the file with mode "w" before writing the
+    written file. Before this, save() truncated the file with mode "w" before writing the
     new content, so a read landing in that window saw an empty, unparseable file."""
     tmp_path = DATA_PATH + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as fh:
@@ -140,9 +140,9 @@ def _new_id(db):
 
 
 def _log_event(task, event, detail="", actor="unspecified"):
-    """Every mutating command calls this — one line, no agent has to remember to log anything
+    """Every mutating command calls this, one line, no agent has to remember to log anything
     separately. `log[]` is the WHAT-changed/WHO/WHEN audit trail; it's distinct from
-    `sessions[]` (the effort/cost ledger — see cmd_session), which nothing can auto-measure."""
+    `sessions[]` (the effort/cost ledger, see cmd_session), which nothing can auto-measure."""
     task.setdefault("log", []).append({
         "ts": _now(), "actor": actor or "unspecified", "event": event, "detail": detail,
     })
@@ -173,9 +173,9 @@ def cmd_show(db, args):
 def cmd_add(db, args):
     status = args.status or db["_meta"]["columns"][0]
     if status not in _valid_statuses(db):
-        sys.exit(f"invalid status {status!r} — one of {_valid_statuses(db)}")
+        sys.exit(f"invalid status {status!r}, must be one of {_valid_statuses(db)}")
     if args.urgency not in VALID_URGENCY:
-        sys.exit(f"invalid urgency {args.urgency!r} — one of {VALID_URGENCY}")
+        sys.exit(f"invalid urgency {args.urgency!r}, must be one of {VALID_URGENCY}")
     new_id = _new_id(db)
     blocked_by = args.blocked_by or []
     related_to = args.related_to or []
@@ -217,13 +217,13 @@ def cmd_update(db, args):
     changes = []
     if args.status:
         if args.status not in _valid_statuses(db):
-            sys.exit(f"invalid status {args.status!r} — one of {_valid_statuses(db)}")
+            sys.exit(f"invalid status {args.status!r}, must be one of {_valid_statuses(db)}")
         if args.status != t["status"]:
             changes.append(f'status: {t["status"]} -> {args.status}')
         t["status"] = args.status
     if args.urgency:
         if args.urgency not in VALID_URGENCY:
-            sys.exit(f"invalid urgency {args.urgency!r} — one of {VALID_URGENCY}")
+            sys.exit(f"invalid urgency {args.urgency!r}, must be one of {VALID_URGENCY}")
         if args.urgency != t["urgency"]:
             changes.append(f'urgency: {t["urgency"]} -> {args.urgency}')
         t["urgency"] = args.urgency
@@ -257,7 +257,7 @@ def cmd_comment(db, args):
     t = _find(db, args.task_id)
     role = args.role or "human"
     if role not in VALID_ROLES:
-        sys.exit(f"invalid role {role!r} — one of {VALID_ROLES}")
+        sys.exit(f"invalid role {role!r}, must be one of {VALID_ROLES}")
     t.setdefault("comments", []).append({
         "author": args.author,
         "role": role,
@@ -321,7 +321,7 @@ def cmd_unlink(db, args):
 def cmd_delete(db, args):
     t = _find(db, args.task_id)
     db["tasks"].remove(t)
-    # A deleted task's id is now meaningless as a reference — drop it from every other
+    # A deleted task's id is now meaningless as a reference, so drop it from every other
     # task's blockedBy/relatedTo instead of leaving a permanent "(unknown)" chip behind.
     for other in db["tasks"]:
         if t["id"] in other.get("blockedBy", []):
@@ -337,7 +337,7 @@ def cmd_delete(db, args):
 
 def cmd_session(db, args):
     """Log one agent's work session on a task: who, how long, how many tokens, what happened.
-    The CLI can't measure this itself — pass it explicitly, typically right after a subagent's
+    The CLI can't measure this itself. Pass it explicitly, typically right after a subagent's
     Agent-tool completion notification reports duration_ms/subagent_tokens for the work it just did."""
     t = _find(db, args.task_id)
     session = {
@@ -363,11 +363,11 @@ def cmd_session(db, args):
 
 
 def render(db):
-    """Regenerate ONLY the embedded <script id="board-data"> JSON block in tasks.html —
-    never touches the surrounding page chrome, so hand-edited CSS/layout survives every
+    """Regenerate ONLY the embedded <script id="board-data"> JSON block in tasks.html.
+    Never touches the surrounding page chrome, so hand-edited CSS/layout survives every
     render."""
     if not os.path.exists(HTML_PATH):
-        print(f"WARN: {HTML_PATH} not found — skipping render", file=sys.stderr)
+        print(f"WARN: {HTML_PATH} not found, skipping render", file=sys.stderr)
         return
     html = open(HTML_PATH, encoding="utf-8").read()
     # json.dumps() doesn't escape "<", so a title/comment/description containing "</script>"
@@ -381,7 +381,7 @@ def render(db):
     )
     new_html, n = pattern.subn(lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3), html, count=1)
     if n == 0:
-        sys.exit(f'no <script id="board-data"> block found in {HTML_PATH} — cannot render')
+        sys.exit(f'no <script id="board-data"> block found in {HTML_PATH}, cannot render')
     open(HTML_PATH, "w", encoding="utf-8").write(new_html)
 
 
@@ -416,7 +416,7 @@ def main():
     p.add_argument("--blocked-by", action="append")
     p.add_argument("--related-to", action="append")
     p.add_argument("--owner")
-    p.add_argument("--actor", help="who/what is creating this (for the log) — defaults to unspecified")
+    p.add_argument("--actor", help="who/what is creating this (for the log), defaults to unspecified")
     p.set_defaults(fn=cmd_add)
 
     p = sub.add_parser("update")
@@ -462,7 +462,7 @@ def main():
     p.add_argument("--duration-sec", type=float, help="wall-clock seconds spent (from the Agent tool's duration_ms/1000)")
     p.add_argument("--tokens", type=int, help="tokens spent (from the Agent tool's subagent_tokens)")
     p.add_argument("--summary", help="one line: what the agent actually did")
-    p.add_argument("--started-at", help="ISO timestamp, if known — alternative/addition to --duration-sec")
+    p.add_argument("--started-at", help="ISO timestamp, if known, alternative/addition to --duration-sec")
     p.add_argument("--ended-at", help="ISO timestamp, if known")
     p.set_defaults(fn=cmd_session)
 

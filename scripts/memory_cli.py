@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""memory_cli.py — the read/write interface to this project's agent-journal system.
+"""memory_cli.py: the read/write interface to this project's agent-journal system.
 
 Fully local: this touches only files under this workspace's data/ directory. Never call anything
 network-facing from here. Each journal is a log an agent (or a human) owns and names; write a
@@ -9,9 +9,9 @@ new one for a distinct thread of work rather than piling everything into one ent
   memory_cli.py show M-0001
   memory_cli.py create --name "..." --owner "..." [--contributor "..."]... [--content-file PATH]
   memory_cli.py append M-0001 --content-file PATH [--author "..."]
-      # adds a timestamped section to the entry's content — the normal way to journal.
+      # adds a timestamped section to the entry's content, the normal way to journal.
   memory_cli.py update M-0001 [--name "..."] [--owner "..."] [--content-file PATH]
-      # --content-file here REPLACES the whole body — use `append` unless you mean to overwrite.
+      # --content-file here REPLACES the whole body, use `append` unless you mean to overwrite.
   memory_cli.py contributor M-0001 --add "..."
   memory_cli.py delete M-0001
   memory_cli.py render          # regenerate memory.html's embedded data block from memory.json
@@ -59,8 +59,8 @@ def locked(timeout=10.0):
                         continue
                 except OSError:
                     pass
-                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s "
-                         f"— is another memory_cli.py call running?")
+                sys.exit(f"could not acquire {LOCK_PATH} within {timeout}s. "
+                         f"Is another memory_cli.py call running?")
             time.sleep(0.05)
     try:
         yield
@@ -186,10 +186,10 @@ def cmd_delete(db, args):
 
 
 def render(db):
-    """Regenerate ONLY the embedded <script id="journal-data"> JSON block in memory.html —
-    never touches the surrounding page chrome."""
+    """Regenerate ONLY the embedded <script id="journal-data"> JSON block in memory.html.
+    Never touches the surrounding page chrome."""
     if not os.path.exists(HTML_PATH):
-        print(f"WARN: {HTML_PATH} not found — skipping render", file=sys.stderr)
+        print(f"WARN: {HTML_PATH} not found, skipping render", file=sys.stderr)
         return
     html = open(HTML_PATH, encoding="utf-8").read()
     # json.dumps() doesn't escape "<", so journal content containing "</script>" would
@@ -203,7 +203,7 @@ def render(db):
     )
     new_html, n = pattern.subn(lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3), html, count=1)
     if n == 0:
-        sys.exit(f'no <script id="journal-data"> block found in {HTML_PATH} — cannot render')
+        sys.exit(f'no <script id="journal-data"> block found in {HTML_PATH}, cannot render')
     open(HTML_PATH, "w", encoding="utf-8").write(new_html)
 
 

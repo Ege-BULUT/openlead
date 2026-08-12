@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""init_workspace.py — scaffold a new OpenLead workspace: a fully local homepage, roadmap,
+"""init_workspace.py: scaffold a new OpenLead workspace, a fully local homepage, roadmap,
 task board, and agent-memory system for a project, driven entirely by JSON + a Python CLI
 per page (no server, no build step, no framework).
 
@@ -8,11 +8,11 @@ per page (no server, no build step, no framework).
       [--pitch "One paragraph shown below the nav cards"]
 
 Idempotent-ish: refuses to overwrite an existing target directory unless --force is passed
-(existing data/*.json is never touched by --force either — only the HTML/scripts are
+(existing data/*.json is never touched by --force either, only the HTML/scripts get
 re-copied, so a re-run can't destroy real project data. If you actually want fresh data too,
 delete the target directory yourself first).
 
-After running, cd into the target directory and open index.html — or better, start with:
+After running, cd into the target directory and open index.html. Or better, start with:
   python3 scripts/roadmap_cli.py add --name "..." --status next
   python3 scripts/tasks_cli.py add --title "..."
   python3 scripts/memory_cli.py create --name "..." --owner "..."
@@ -67,7 +67,7 @@ def main():
 
     existing_index = os.path.join(target, "index.html")
     if os.path.exists(existing_index) and not args.force:
-        sys.exit(f"{existing_index} already exists — pass --force to re-copy the HTML/scripts "
+        sys.exit(f"{existing_index} already exists. Pass --force to re-copy the HTML/scripts "
                  f"(existing data/*.json is never touched, so this is safe for an upgrade).")
 
     for page in PAGES:
