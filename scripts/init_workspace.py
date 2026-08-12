@@ -18,6 +18,7 @@ After running, cd into the target directory and open index.html — or better, s
   python3 scripts/memory_cli.py create --name "..." --owner "..."
 """
 import argparse
+import importlib.util
 import json
 import os
 import shutil
@@ -30,6 +31,19 @@ TEMPLATES = os.path.join(REPO_ROOT, "templates")
 PAGES = ("index.html", "roadmap.html", "tasks.html", "memory.html")
 DATA_FILES = ("project.json", "roadmap.json", "tasks.json", "memory.json")
 SCRIPTS = ("roadmap_cli.py", "tasks_cli.py", "memory_cli.py")
+
+
+def _render_from_target(target, script_name):
+    """Load the CLI module from its just-copied location in the target workspace (not from
+    this repo) and call its own render(), so the page it owns reflects whatever is actually
+    in that workspace's data/ directory right now. Needed because copying the HTML template
+    on a --force re-run resets the page's embedded data block to the template's empty
+    default, even though the real data file next to it is untouched."""
+    path = os.path.join(target, "scripts", script_name)
+    spec = importlib.util.spec_from_file_location(script_name[:-3], path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.render(module.load())
 
 
 def main():
@@ -61,6 +75,14 @@ def main():
         if os.path.exists(dst):
             continue  # never clobber real project data on a re-run
         shutil.copy2(os.path.join(TEMPLATES, "data", data_file), dst)
+
+    # The HTML pages we just copied in have the template's empty data baked in. On a fresh
+    # scaffold that's correct (there's nothing to show yet); on a --force re-run it would
+    # otherwise blank out whatever was already rendered, even though the real data files
+    # right next to them were never touched. Re-render each page from its own data now so
+    # both cases end up correct.
+    for script in ("roadmap_cli.py", "tasks_cli.py", "memory_cli.py"):
+        _render_from_target(target, script)
 
     project_path = os.path.join(target, "data", "project.json")
     project = json.load(open(project_path, encoding="utf-8"))
