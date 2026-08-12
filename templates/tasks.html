@@ -243,12 +243,18 @@
     var o = document.createElement('option'); o.value = p; o.textContent = p;
     tagEl.appendChild(o);
   });
+  var qMilestone = new URLSearchParams(location.search).get('milestone');
+  // A milestone with zero tasks so far won't be in the `milestones` map built above (it's
+  // only populated from tasks that already have one), but the filter should still apply,
+  // showing a correctly empty board rather than silently falling back to "no filter" —
+  // add it as an option up front if it's not there yet, so setting .value below actually
+  // takes (a <select> ignores being set to a value with no matching <option>).
+  if (qMilestone && !milestones[qMilestone]) milestones[qMilestone] = true;
   Object.keys(milestones).sort().forEach(function (ms) {
     var o = document.createElement('option'); o.value = ms; o.textContent = ms;
     milestoneEl.appendChild(o);
   });
-  var qMilestone = new URLSearchParams(location.search).get('milestone');
-  if (qMilestone && milestones[qMilestone]) milestoneEl.value = qMilestone;
+  if (qMilestone) milestoneEl.value = qMilestone;
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
