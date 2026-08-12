@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "description": "Task board data. Edit via scripts/tasks_cli.py, not by hand — then run its `render` command to update tasks.html. Fully local: nothing here is ever pushed anywhere.",
+    "columns": ["backlog", "analyze", "planning", "development", "ready_for_review", "testing", "accepted", "rejected"],
+    "columnLabels": {
+      "backlog": "Backlog",
+      "analyze": "Analyze",
+      "planning": "Planning",
+      "development": "Development",
+      "ready_for_review": "Ready for Review",
+      "testing": "Testing",
+      "accepted": "Accepted (Done)",
+      "rejected": "Rejected"
+    },
+    "urgencyLevels": ["low", "medium", "high", "critical"],
+    "taskIdPrefix": "T-",
+    "nextTaskSeq": 1
+  },
+  "tasks": []
+}

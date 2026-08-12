@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Board — OpenLead Workspace</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --ink: #1b1b18; --sub: #6b6b63;
+    --line: #e5e3dc; --mono-bg: #f1efe8;
+    --good: #1c7a4d; --good-bg: #e8f5ee;
+    --bad: #b3261e; --bad-bg: #fdecea;
+    --warn: #9a6700; --warn-bg: #fff4de;
+    --dup: #5b4fc4; --dup-bg: #ecebfb;
+    --accent: #2f6fed; --accent-bg: rgba(47,111,237,0.10);
+    --crit: #b3261e; --crit-bg: #fdecea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a; --panel: #1f2023; --ink: #eceae5; --sub: #9a9890;
+      --line: #33342f; --mono-bg: #26272a;
+      --good: #5fd39a; --good-bg: #123326;
+      --bad: #ff8a80; --bad-bg: #3a1a17;
+      --warn: #f0c674; --warn-bg: #3a2f10;
+      --dup: #b8b0ff; --dup-bg: #262151;
+      --accent: #7aa2f7; --accent-bg: rgba(122,162,247,0.12);
+      --crit: #ff8a80; --crit-bg: #3a1a17;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 0 4rem;
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  code, .mono { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.92em; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  body.has-ol-sidebar { margin-left: 232px; }
+  .ol-sidebar {
+    position: fixed; top: 0; left: 0; width: 232px; height: 100vh; overflow-y: auto;
+    background: #fbfbfa; border-right: 1px solid #e5e3dc; padding: 1.6rem 1rem 1.6rem 1.3rem;
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    z-index: 100; box-sizing: border-box;
+  }
+  .ol-sidebar .kicker { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: #8a8778; font-weight: 700; margin-bottom: 0.25rem; }
+  .ol-sidebar .title { font-size: 0.95rem; font-weight: 700; color: #1b1b18; margin-bottom: 1.3rem; line-height: 1.3; }
+  .ol-sidebar a { display: block; padding: 0.45rem 0.6rem; margin-bottom: 0.1rem; border-radius: 7px; color: #3a3a34; text-decoration: none; font-size: 0.86rem; }
+  .ol-sidebar a:hover { background: #eeece4; }
+  .ol-sidebar a.active { background: #2f6fed; color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .ol-sidebar { background: #1a1b1e; border-right-color: #33342f; }
+    .ol-sidebar .kicker { color: #9a9890; }
+    .ol-sidebar .title { color: #eceae5; }
+    .ol-sidebar a { color: #cfcdc6; }
+    .ol-sidebar a:hover { background: #26272a; }
+    .ol-sidebar a.active { background: #7aa2f7; color: #14151a; }
+  }
+  @media (max-width: 860px) {
+    .ol-sidebar { position: static; width: auto; height: auto; border-right: none; border-bottom: 1px solid #e5e3dc; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
+    .ol-sidebar .title, .ol-sidebar .kicker { width: 100%; }
+    body.has-ol-sidebar { margin-left: 0; }
+  }
+
+  header { padding: 2.4rem 1.5rem 1.2rem; max-width: 1400px; margin: 0 auto; }
+  header .kicker { color: var(--sub); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  header h1 { margin: 0.3rem 0 0.5rem; font-size: 2rem; }
+  header p.scope { color: var(--sub); margin: 0 0 1rem; font-size: 1rem; max-width: 80ch; }
+
+  .toolbar { max-width: 1400px; margin: 0 auto 1.2rem; padding: 0 1.5rem; display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+  .toolbar input, .toolbar select { background: var(--panel); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.88rem; font-family: inherit; }
+  .toolbar input { flex: 1 1 220px; }
+  .toolbar .count { color: var(--sub); font-size: 0.85rem; margin-left: auto; white-space: nowrap; }
+
+  .board-wrap { max-width: 100%; overflow-x: auto; padding: 0 1.5rem; }
+  .board { display: flex; gap: 0.9rem; min-width: 1360px; padding-bottom: 1rem; }
+  .col { flex: 1 1 0; min-width: 170px; background: var(--mono-bg); border-radius: 12px; padding: 0.8rem; display: flex; flex-direction: column; }
+  .col-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.7rem; padding: 0 0.2rem; }
+  .col-head h2 { font-size: 0.85rem; margin: 0; text-transform: uppercase; letter-spacing: 0.03em; color: var(--sub); font-weight: 700; }
+  .col-head .n { font-size: 0.78rem; color: var(--sub); background: var(--panel); border-radius: 999px; padding: 0.05rem 0.5rem; }
+  .col.col-accepted { background: var(--good-bg); }
+  .col.col-rejected { background: var(--bad-bg); opacity: 0.85; }
+  .col-cards { display: flex; flex-direction: column; gap: 0.6rem; min-height: 60px; }
+  .empty-state { color: var(--sub); font-size: 0.82rem; padding: 0.9rem 0.4rem; text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0.7rem 0.8rem; cursor: pointer; transition: border-color 0.12s; }
+  .card:hover { border-color: var(--accent); }
+  .card .card-top { display: flex; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.35rem; }
+  .card .cid { font-family: "SF Mono", Menlo, monospace; font-size: 0.7rem; color: var(--sub); }
+  .card h3 { font-size: 0.9rem; margin: 0 0 0.4rem; line-height: 1.3; }
+  .card .card-meta { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .urg { font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.1rem 0.4rem; border-radius: 4px; }
+  .urg.low { background: var(--mono-bg); color: var(--sub); }
+  .urg.medium { background: var(--accent-bg); color: var(--accent); }
+  .urg.high { background: var(--warn-bg); color: var(--warn); }
+  .urg.critical { background: var(--crit-bg); color: var(--crit); }
+  .tagchip { font-size: 0.64rem; font-weight: 700; background: var(--dup-bg); color: var(--dup); padding: 0.1rem 0.4rem; border-radius: 4px; }
+  .mschip { font-size: 0.64rem; font-weight: 700; background: var(--good-bg); color: var(--good); padding: 0.1rem 0.4rem; border-radius: 4px; }
+  .card .card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-size: 0.72rem; color: var(--sub); }
+  .card .blockflag { color: var(--bad); font-weight: 700; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: flex-start; justify-content: center; padding: 4vh 1rem; z-index: 200; overflow-y: auto; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--panel); border-radius: 14px; max-width: 640px; width: 100%; padding: 1.6rem 1.8rem; border: 1px solid var(--line); }
+  .modal .m-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .modal h2 { margin: 0 0 0.2rem; font-size: 1.2rem; }
+  .modal .m-id { font-family: "SF Mono", monospace; font-size: 0.78rem; color: var(--sub); }
+  .modal .closebtn { background: none; border: none; font-size: 1.3rem; color: var(--sub); cursor: pointer; line-height: 1; }
+  .modal .m-desc { margin: 0.9rem 0; color: var(--ink); font-size: 0.94rem; }
+  .modal .m-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0; font-size: 0.85rem; }
+  .modal .m-row .k { color: var(--sub); }
+  .chiplink { background: var(--mono-bg); border-radius: 6px; padding: 0.15rem 0.5rem; font-size: 0.8rem; font-family: "SF Mono", monospace; cursor: pointer; border: 1px solid var(--line); }
+  .chiplink:hover { border-color: var(--accent); }
+  .modal h3.sec { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sub); margin: 1.2rem 0 0.5rem; }
+  .comment { background: var(--mono-bg); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.5rem; font-size: 0.88rem; }
+  .comment .c-head { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--sub); margin-bottom: 0.25rem; }
+  .comment .c-role { text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em; }
+  .logentry { display: flex; gap: 0.6rem; padding: 0.35rem 0; font-size: 0.82rem; border-bottom: 1px solid var(--line); }
+  .logentry:last-child { border-bottom: none; }
+  .logentry .lt { color: var(--sub); font-family: "SF Mono", monospace; font-size: 0.72rem; flex: 0 0 128px; white-space: nowrap; }
+  .logentry .lev { font-weight: 700; text-transform: uppercase; font-size: 0.68rem; flex: 0 0 64px; color: var(--accent); }
+  .logentry .ld { flex: 1 1 auto; color: var(--ink); }
+  .logentry .la { color: var(--sub); }
+  table.sessions { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 0.4rem; }
+  table.sessions th, table.sessions td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--line); }
+  table.sessions th { color: var(--sub); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .sessions-total { font-size: 0.8rem; color: var(--sub); margin-top: 0.3rem; }
+  .draftbox textarea { width: 100%; min-height: 64px; background: var(--mono-bg); border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem 0.7rem; color: var(--ink); font-family: inherit; font-size: 0.88rem; resize: vertical; }
+  .draftbox input { background: var(--mono-bg); border: 1px solid var(--line); border-radius: 8px; padding: 0.4rem 0.6rem; color: var(--ink); font-size: 0.85rem; margin-right: 0.4rem; }
+  .draftbox { margin-top: 0.5rem; }
+  .draftbox .row { display: flex; gap: 0.4rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+  .btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0.45rem 0.9rem; font-size: 0.85rem; cursor: pointer; font-weight: 600; }
+  .btn.secondary { background: var(--mono-bg); color: var(--ink); border: 1px solid var(--line); }
+  .cmdbox { display: none; margin-top: 0.6rem; }
+  .cmdbox.show { display: block; }
+  .cmdbox pre { background: #14151a; color: #d6e2ff; border-radius: 8px; padding: 0.7rem 0.9rem; font-size: 0.78rem; overflow-x: auto; margin: 0.4rem 0; }
+  .hint { color: var(--sub); font-size: 0.8rem; }
+
+  footer { max-width: 1400px; margin: 3rem auto 0; padding: 1.5rem 1.5rem 0; border-top: 1px solid var(--line); color: var(--sub); font-size: 0.92rem; }
+  footer strong { color: var(--ink); }
+  footer ul { padding-left: 1.2rem; }
+</style>
+</head>
+<body class="has-ol-sidebar">
+<nav class="ol-sidebar">
+  <div class="kicker">OpenLead</div>
+  <div class="title">Workspace</div>
+  <a href="index.html">Home</a>
+  <a href="roadmap.html">Roadmap</a>
+  <a href="tasks.html" class="active">Task Board</a>
+  <a href="memory.html">Agent Memory</a>
+</nav>
+
+<header>
+  <div class="kicker">Task Board</div>
+  <h1>Tasks</h1>
+  <p class="scope">Backlog → Analyze → Planning → Development → Ready for Review → Testing → Accepted (Done) /
+    Rejected. See the <a href="roadmap.html">roadmap</a> for the milestone order tasks get created in. Agents
+    mutate this board through <code>scripts/tasks_cli.py</code>, never by hand-editing the JSON.</p>
+</header>
+
+<div class="toolbar">
+  <input id="search" type="text" placeholder="Search title or description…">
+  <select id="filter-milestone"><option value="">All milestones</option></select>
+  <select id="filter-tag"><option value="">All tags</option></select>
+  <select id="filter-urgency">
+    <option value="">All urgency</option>
+    <option value="critical">Critical</option>
+    <option value="high">High</option>
+    <option value="medium">Medium</option>
+    <option value="low">Low</option>
+  </select>
+  <span class="count" id="visible-count"></span>
+</div>
+
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<footer>
+  <strong>How this board works</strong>
+  <ul>
+    <li>The task board's data lives in <code>data/tasks.json</code>. This page renders a read view from it via
+      <code>scripts/tasks_cli.py render</code> — every mutating command re-renders automatically.</li>
+    <li>Fully local — no server, no fetch, no network call anywhere on this page. The board data is embedded
+      directly in this file at render time.</li>
+    <li>Drafting a comment or logging a session in this UI does not save anywhere by itself (there's nowhere
+      local-only to save it to) — it builds the exact CLI command for you to run, which is the one thing that
+      actually persists it.</li>
+    <li>Open questions and working notes belong in <a href="memory.html">agent memory</a>, not in a task
+      comment thread.</li>
+  </ul>
+</footer>
+
+<script id="board-data" type="application/json">
+{
+  "_meta": {
+    "description": "Task board data. Edit via scripts/tasks_cli.py, not by hand — then run its `render` command to update tasks.html. Fully local: nothing here is ever pushed anywhere.",
+    "columns": ["backlog", "analyze", "planning", "development", "ready_for_review", "testing", "accepted", "rejected"],
+    "columnLabels": {
+      "backlog": "Backlog",
+      "analyze": "Analyze",
+      "planning": "Planning",
+      "development": "Development",
+      "ready_for_review": "Ready for Review",
+      "testing": "Testing",
+      "accepted": "Accepted (Done)",
+      "rejected": "Rejected"
+    },
+    "urgencyLevels": ["low", "medium", "high", "critical"],
+    "taskIdPrefix": "T-",
+    "nextTaskSeq": 1
+  },
+  "tasks": []
+}
+</script>
+
+<script>
+(function () {
+  var DATA = JSON.parse(document.getElementById('board-data').textContent);
+  var META = DATA._meta;
+  var TASKS = DATA.tasks;
+  var byId = {};
+  TASKS.forEach(function (t) { byId[t.id] = t; });
+
+  var boardEl = document.getElementById('board');
+  var searchEl = document.getElementById('search');
+  var milestoneEl = document.getElementById('filter-milestone');
+  var tagEl = document.getElementById('filter-tag');
+  var urgencyEl = document.getElementById('filter-urgency');
+  var countEl = document.getElementById('visible-count');
+
+  var tags = {}, milestones = {};
+  TASKS.forEach(function (t) {
+    if (t.tag) tags[t.tag] = true;
+    if (t.milestone) milestones[t.milestone] = true;
+  });
+  Object.keys(tags).sort().forEach(function (p) {
+    var o = document.createElement('option'); o.value = p; o.textContent = p;
+    tagEl.appendChild(o);
+  });
+  Object.keys(milestones).sort().forEach(function (ms) {
+    var o = document.createElement('option'); o.value = ms; o.textContent = ms;
+    milestoneEl.appendChild(o);
+  });
+  var qMilestone = new URLSearchParams(location.search).get('milestone');
+  if (qMilestone && milestones[qMilestone]) milestoneEl.value = qMilestone;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function matches(t) {
+    var q = searchEl.value.trim().toLowerCase();
+    if (q && !((t.title || '').toLowerCase().indexOf(q) > -1 ||
+               (t.description || '').toLowerCase().indexOf(q) > -1)) return false;
+    if (milestoneEl.value && t.milestone !== milestoneEl.value) return false;
+    if (tagEl.value && t.tag !== tagEl.value) return false;
+    if (urgencyEl.value && t.urgency !== urgencyEl.value) return false;
+    return true;
+  }
+
+  function cardHtml(t) {
+    var blocked = (t.blockedBy || []).length > 0;
+    return '' +
+      '<div class="card" data-id="' + esc(t.id) + '">' +
+        '<div class="card-top"><span class="cid">' + esc(t.id) + '</span>' +
+          (blocked ? '<span class="blockflag" title="Blocked">⛔</span>' : '') +
+        '</div>' +
+        '<h3>' + esc(t.title) + '</h3>' +
+        '<div class="card-meta">' +
+          '<span class="urg ' + esc(t.urgency || 'medium') + '">' + esc(t.urgency || '—') + '</span>' +
+          (t.milestone ? '<span class="mschip">' + esc(t.milestone) + '</span>' : '') +
+          (t.tag ? '<span class="tagchip">' + esc(t.tag) + '</span>' : '') +
+        '</div>' +
+        '<div class="card-foot">' +
+          '<span>' + esc(t.owner || 'unassigned') + '</span>' +
+          '<span>' + ((t.comments || []).length) + ' comment' + ((t.comments||[]).length===1?'':'s') + '</span>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function render() {
+    boardEl.innerHTML = '';
+    var visible = 0;
+    META.columns.forEach(function (colKey) {
+      var colTasks = TASKS.filter(function (t) { return t.status === colKey && matches(t); });
+      visible += colTasks.length;
+      var col = document.createElement('div');
+      col.className = 'col col-' + colKey;
+      var head = document.createElement('div');
+      head.className = 'col-head';
+      head.innerHTML = '<h2>' + esc(META.columnLabels[colKey] || colKey) + '</h2>' +
+                        '<span class="n">' + colTasks.length + '</span>';
+      col.appendChild(head);
+      var cardsWrap = document.createElement('div');
+      cardsWrap.className = 'col-cards';
+      cardsWrap.innerHTML = colTasks.length === 0
+        ? '<div class="empty-state">' + (colKey === 'backlog' ? 'No tasks yet.' : 'No tasks') + '</div>'
+        : colTasks.map(cardHtml).join('');
+      col.appendChild(cardsWrap);
+      boardEl.appendChild(col);
+    });
+    countEl.textContent = visible + ' of ' + TASKS.length + ' tasks shown';
+    boardEl.querySelectorAll('.card').forEach(function (el) {
+      el.addEventListener('click', function () { openModal(el.getAttribute('data-id')); });
+    });
+  }
+
+  function shellQuote(s) {
+    return "'" + String(s == null ? '' : s).replace(/'/g, "'\\''") + "'";
+  }
+
+  function openModal(id) {
+    var t = byId[id];
+    if (!t) return;
+    var overlay = document.getElementById('modal-overlay');
+    var m = document.getElementById('modal');
+    var comments = (t.comments || []).map(function (c) {
+      return '<div class="comment"><div class="c-head"><span class="c-role">' + esc(c.role || 'human') +
+             '</span><span>' + esc(c.author) + ' · ' + esc(c.date) + '</span></div>' + esc(c.text) + '</div>';
+    }).join('') || '<p class="hint">No comments yet.</p>';
+    var blockedBy = (t.blockedBy || []).map(function (bid) {
+      return '<span class="chiplink" data-jump="' + esc(bid) + '">' + esc(bid) +
+             (byId[bid] ? ' — ' + esc(byId[bid].title) : ' (unknown)') + '</span>';
+    }).join(' ') || '<span class="hint">none</span>';
+    var relatedTo = (t.relatedTo || []).map(function (rid) {
+      return '<span class="chiplink" data-jump="' + esc(rid) + '">' + esc(rid) +
+             (byId[rid] ? ' — ' + esc(byId[rid].title) : ' (unknown)') + '</span>';
+    }).join(' ') || '<span class="hint">none</span>';
+    var refs = (t.refs || []).map(esc).join(', ') || '—';
+
+    var sessions = t.sessions || [];
+    var totalSec = sessions.reduce(function (s, x) { return s + (x.durationSec || 0); }, 0);
+    var totalTok = sessions.reduce(function (s, x) { return s + (x.tokens || 0); }, 0);
+    var sessionsHtml = '<p class="hint">No agent sessions logged yet.</p>';
+    if (sessions.length) {
+      sessionsHtml = '<table class="sessions"><tr><th>When</th><th>Agent</th><th>Duration</th><th>Tokens</th><th>Summary</th></tr>' +
+        sessions.map(function (s) {
+          return '<tr><td>' + esc(s.ts) + '</td><td>' + esc(s.agent) + '</td>' +
+            '<td>' + (s.durationSec != null ? Math.round(s.durationSec) + 's' : '—') + '</td>' +
+            '<td>' + (s.tokens != null ? s.tokens.toLocaleString() : '—') + '</td>' +
+            '<td>' + esc(s.summary || '') + '</td></tr>';
+        }).join('') + '</table>' +
+        '<div class="sessions-total">' + sessions.length + ' session' + (sessions.length===1?'':'s') +
+        ' · ' + Math.round(totalSec) + 's total · ' + totalTok.toLocaleString() + ' tokens total</div>';
+    }
+
+    var log = (t.log || []).slice().reverse();
+    var logHtml = '<p class="hint">No activity logged yet.</p>';
+    if (log.length) {
+      logHtml = log.map(function (l) {
+        return '<div class="logentry"><span class="lt">' + esc(l.ts) + '</span>' +
+          '<span class="lev">' + esc(l.event) + '</span>' +
+          '<span class="ld">' + esc(l.detail || '') + '<span class="la"> — ' + esc(l.actor || '') + '</span></span></div>';
+      }).join('');
+    }
+
+    m.innerHTML =
+      '<div class="m-head"><div><div class="m-id">' + esc(t.id) + '</div><h2>' + esc(t.title) + '</h2></div>' +
+        '<button class="closebtn" id="modal-close">&times;</button></div>' +
+      '<div class="m-row"><span class="urg ' + esc(t.urgency||'medium') + '">' + esc(t.urgency||'—') + '</span>' +
+        (t.milestone ? '<span class="mschip">' + esc(t.milestone) + '</span>' : '') +
+        (t.tag ? '<span class="tagchip">' + esc(t.tag) + '</span>' : '') +
+        '<span class="k">status:</span> ' + esc(META.columnLabels[t.status] || t.status) +
+        ' &nbsp; <span class="k">owner:</span> ' + esc(t.owner || 'unassigned') + '</div>' +
+      '<p class="m-desc">' + (esc(t.description) || '<span class="hint">No description.</span>') + '</p>' +
+      '<div class="m-row"><span class="k">refs:</span> ' + refs + '</div>' +
+      '<div class="m-row"><span class="k">blocked by:</span> ' + blockedBy + '</div>' +
+      '<div class="m-row"><span class="k">related to:</span> ' + relatedTo + '</div>' +
+      '<div class="m-row hint">created ' + esc(t.createdAt) + ' · updated ' + esc(t.updatedAt) + '</div>' +
+      '<h3 class="sec">Comments</h3>' + comments +
+      '<h3 class="sec">Draft a comment</h3>' +
+      '<div class="draftbox">' +
+        '<div class="row"><input id="d-author" placeholder="your name" size="14">' +
+        '<select id="d-role"><option>engineer</option><option>tester</option><option>reviewer</option><option>human</option></select></div>' +
+        '<textarea id="d-text" placeholder="Comment text…"></textarea>' +
+        '<div class="row" style="margin-top:0.5rem;">' +
+          '<button class="btn" id="d-build">Build CLI command</button>' +
+          '<button class="btn secondary" id="d-copy" style="display:none;">Copy to clipboard</button>' +
+        '</div>' +
+        '<div class="cmdbox" id="d-cmdbox"><p class="hint">Run this to actually save the comment (nothing is saved until you do):</p><pre id="d-cmd"></pre></div>' +
+      '</div>' +
+      '<h3 class="sec">Work sessions</h3>' + sessionsHtml +
+      '<h3 class="sec">Log a session</h3>' +
+      '<div class="draftbox">' +
+        '<div class="row">' +
+          '<input id="s-agent" placeholder="agent name (e.g. code-reviewer)" size="20">' +
+          '<input id="s-duration" placeholder="duration, sec" size="8" type="number">' +
+          '<input id="s-tokens" placeholder="tokens" size="8" type="number">' +
+        '</div>' +
+        '<input id="s-summary" placeholder="one-line summary of what was done" style="width:100%;margin-bottom:0.4rem;">' +
+        '<div class="row">' +
+          '<button class="btn" id="s-build">Build CLI command</button>' +
+          '<button class="btn secondary" id="s-copy" style="display:none;">Copy to clipboard</button>' +
+        '</div>' +
+        '<div class="cmdbox" id="s-cmdbox"><p class="hint">Run this to actually log the session (nothing is saved until you do):</p><pre id="s-cmd"></pre></div>' +
+      '</div>' +
+      '<h3 class="sec">Activity log</h3>' + logHtml;
+
+    overlay.classList.add('open');
+    document.getElementById('modal-close').onclick = closeModal;
+    m.querySelectorAll('.chiplink').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var jumpId = el.getAttribute('data-jump');
+        if (byId[jumpId]) openModal(jumpId);
+      });
+    });
+    document.getElementById('d-build').onclick = function () {
+      var author = document.getElementById('d-author').value || 'someone';
+      var role = document.getElementById('d-role').value;
+      var text = document.getElementById('d-text').value || '';
+      var cmd = 'python3 scripts/tasks_cli.py comment ' + t.id +
+                ' --author ' + shellQuote(author) + ' --role ' + shellQuote(role) +
+                ' --text ' + shellQuote(text);
+      document.getElementById('d-cmd').textContent = cmd;
+      document.getElementById('d-cmdbox').classList.add('show');
+      document.getElementById('d-copy').style.display = 'inline-block';
+      document.getElementById('d-copy').onclick = function () {
+        navigator.clipboard.writeText(cmd).catch(function () {});
+      };
+    };
+    document.getElementById('s-build').onclick = function () {
+      var agent = document.getElementById('s-agent').value || 'unknown-agent';
+      var duration = document.getElementById('s-duration').value;
+      var tokens = document.getElementById('s-tokens').value;
+      var summary = document.getElementById('s-summary').value || '';
+      var cmd = 'python3 scripts/tasks_cli.py session ' + t.id + ' --agent ' + shellQuote(agent);
+      if (duration) cmd += ' --duration-sec ' + parseFloat(duration);
+      if (tokens) cmd += ' --tokens ' + parseInt(tokens, 10);
+      if (summary) cmd += ' --summary ' + shellQuote(summary);
+      document.getElementById('s-cmd').textContent = cmd;
+      document.getElementById('s-cmdbox').classList.add('show');
+      document.getElementById('s-copy').style.display = 'inline-block';
+      document.getElementById('s-copy').onclick = function () {
+        navigator.clipboard.writeText(cmd).catch(function () {});
+      };
+    };
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+  document.getElementById('modal-overlay').addEventListener('click', function (e) {
+    if (e.target === this) closeModal();
+  });
+
+  [searchEl, milestoneEl, tagEl, urgencyEl].forEach(function (el) {
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
