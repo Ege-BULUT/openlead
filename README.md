@@ -1,5 +1,3 @@
-# OpenLead
-
 <div align="center">
 
 ```
