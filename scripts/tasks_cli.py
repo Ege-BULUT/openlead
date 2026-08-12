@@ -14,6 +14,10 @@ tasks.json, so ids, timestamps, and the rendered tasks.html stay consistent.
                    [--title "..."] [--desc "..."] [--actor "..."]
   tasks_cli.py comment T-0001 --author "tester-agent" --text "..." [--role tester|engineer|reviewer|human]
   tasks_cli.py link T-0001 [--blocked-by T-0002] [--related-to T-0005] [--actor "..."]
+  tasks_cli.py unlink T-0001 [--blocked-by T-0002] [--related-to T-0005] [--actor "..."]
+  tasks_cli.py delete T-0001 [--actor "..."]
+      # also drops the deleted id from every other task's blockedBy/relatedTo, so nothing
+      # is left pointing at a task that no longer exists.
   tasks_cli.py session T-0001 --agent "code-reviewer" [--duration-sec 340] [--tokens 12345]
                    [--summary "..."] [--started-at ISO] [--ended-at ISO]
       # records one agent's work session on a task: who, how long, how many tokens, what happened.
@@ -290,6 +294,47 @@ def cmd_link(db, args):
     print(f'linked {t["id"]}')
 
 
+def cmd_unlink(db, args):
+    t = _find(db, args.task_id)
+    changed = False
+    if args.blocked_by and args.blocked_by in t["blockedBy"]:
+        t["blockedBy"].remove(args.blocked_by)
+        _log_event(t, "unlinked", f"blockedBy -= {args.blocked_by}", args.actor)
+        changed = True
+    if args.related_to and args.related_to in t["relatedTo"]:
+        t["relatedTo"].remove(args.related_to)
+        _log_event(t, "unlinked", f"relatedTo -= {args.related_to}", args.actor)
+        changed = True
+        other = next((x for x in db["tasks"] if x["id"] == args.related_to), None)
+        if other and t["id"] in other["relatedTo"]:
+            other["relatedTo"].remove(t["id"])
+            _log_event(other, "unlinked", f"relatedTo -= {t['id']}", args.actor)
+    if not changed:
+        print(f'nothing to unlink on {t["id"]}')
+        return
+    t["updatedAt"] = _now()
+    save(db)
+    render(db)
+    print(f'unlinked {t["id"]}')
+
+
+def cmd_delete(db, args):
+    t = _find(db, args.task_id)
+    db["tasks"].remove(t)
+    # A deleted task's id is now meaningless as a reference — drop it from every other
+    # task's blockedBy/relatedTo instead of leaving a permanent "(unknown)" chip behind.
+    for other in db["tasks"]:
+        if t["id"] in other.get("blockedBy", []):
+            other["blockedBy"].remove(t["id"])
+            _log_event(other, "unlinked", f"blockedBy -= {t['id']} (deleted)", args.actor)
+        if t["id"] in other.get("relatedTo", []):
+            other["relatedTo"].remove(t["id"])
+            _log_event(other, "unlinked", f"relatedTo -= {t['id']} (deleted)", args.actor)
+    save(db)
+    render(db)
+    print(f'deleted {t["id"]}')
+
+
 def cmd_session(db, args):
     """Log one agent's work session on a task: who, how long, how many tokens, what happened.
     The CLI can't measure this itself — pass it explicitly, typically right after a subagent's
@@ -398,6 +443,18 @@ def main():
     p.add_argument("--related-to")
     p.add_argument("--actor", help="who/what is making this link (for the log)")
     p.set_defaults(fn=cmd_link)
+
+    p = sub.add_parser("unlink")
+    p.add_argument("task_id")
+    p.add_argument("--blocked-by")
+    p.add_argument("--related-to")
+    p.add_argument("--actor", help="who/what is removing this link (for the log)")
+    p.set_defaults(fn=cmd_unlink)
+
+    p = sub.add_parser("delete")
+    p.add_argument("task_id")
+    p.add_argument("--actor", help="who/what is deleting this task (logged on any other task whose blockedBy/relatedTo pointed at it)")
+    p.set_defaults(fn=cmd_delete)
 
     p = sub.add_parser("session")
     p.add_argument("task_id")

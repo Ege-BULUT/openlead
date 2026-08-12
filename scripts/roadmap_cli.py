@@ -19,6 +19,9 @@ humans) use this instead of hand-editing roadmap.json, so ids and the rendered r
       # tasks.html?milestone=<id> for free — you don't need a chip for that.
   roadmap_cli.py move M1 --position 2
       # milestone order is display order; 0-based position, moves M1 to index 2
+  roadmap_cli.py delete M1
+      # if any tasks still have M1 as their milestone, prints their ids as a heads up but
+      # doesn't touch them — a task's milestone reference is soft, see tasks_cli.py
   roadmap_cli.py note --text "A provenance caveat shown below all milestone cards"
   roadmap_cli.py intro --text "One-paragraph subtitle shown under the Roadmap H1"
   roadmap_cli.py render          # regenerate roadmap.html's embedded data block from roadmap.json
@@ -183,6 +186,25 @@ def cmd_move(db, args):
     print(f'moved {m["id"]} to position {pos}')
 
 
+def cmd_delete(db, args):
+    m = _find(db, args.milestone_id)
+    db["milestones"].remove(m)
+    save(db)
+    render(db)
+    tasks_path = os.path.join(ROOT, "data", "tasks.json")
+    if os.path.exists(tasks_path):
+        try:
+            tasks_db = json.load(open(tasks_path, encoding="utf-8"))
+            referring = [t["id"] for t in tasks_db.get("tasks", []) if t.get("milestone") == m["id"]]
+        except (OSError, json.JSONDecodeError):
+            referring = []
+        if referring:
+            print(f'deleted {m["id"]} — heads up, {len(referring)} task(s) still have this as '
+                  f'their milestone: {", ".join(referring)}')
+            return
+    print(f'deleted {m["id"]}')
+
+
 def cmd_note(db, args):
     db.setdefault("notes", []).append(args.text)
     save(db)
@@ -266,6 +288,10 @@ def main():
     p.add_argument("milestone_id")
     p.add_argument("--position", type=int, required=True)
     p.set_defaults(fn=cmd_move)
+
+    p = sub.add_parser("delete")
+    p.add_argument("milestone_id")
+    p.set_defaults(fn=cmd_delete)
 
     p = sub.add_parser("note")
     p.add_argument("--text", required=True)
