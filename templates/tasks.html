@@ -172,6 +172,7 @@
   </select>
   <select id="filter-owner"><option value="">All owners</option></select>
   <span class="count" id="visible-count"></span>
+  <span class="count" id="effort-total"></span>
 </div>
 
 <div class="board-wrap">
@@ -235,6 +236,7 @@
   var urgencyEl = document.getElementById('filter-urgency');
   var ownerEl = document.getElementById('filter-owner');
   var countEl = document.getElementById('visible-count');
+  var effortEl = document.getElementById('effort-total');
 
   var tags = {}, milestones = {}, owners = {};
   TASKS.forEach(function (t) {
@@ -302,13 +304,19 @@
 
   function render() {
     boardEl.innerHTML = '';
-    var visible = 0;
+    var visible = 0, totalSec = 0, totalTok = 0;
     META.columns.forEach(function (colKey) {
       var colTasks = TASKS.filter(function (t) { return t.status === colKey && matches(t); });
       colTasks.sort(function (a, b) {
         return META.urgencyLevels.indexOf(b.urgency) - META.urgencyLevels.indexOf(a.urgency);
       });
       visible += colTasks.length;
+      colTasks.forEach(function (t) {
+        (t.sessions || []).forEach(function (s) {
+          totalSec += s.durationSec || 0;
+          totalTok += s.tokens || 0;
+        });
+      });
       var col = document.createElement('div');
       col.className = 'col col-' + colKey;
       var head = document.createElement('div');
@@ -325,6 +333,9 @@
       boardEl.appendChild(col);
     });
     countEl.textContent = visible + ' of ' + TASKS.length + ' tasks shown';
+    effortEl.textContent = (totalSec || totalTok)
+      ? '· ' + Math.round(totalSec).toLocaleString() + 's, ' + totalTok.toLocaleString() + ' tokens logged'
+      : '';
     boardEl.querySelectorAll('.card').forEach(function (el) {
       el.addEventListener('click', function () { openModal(el.getAttribute('data-id')); });
     });
