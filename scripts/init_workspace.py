@@ -78,7 +78,9 @@ def main():
     index_path = os.path.join(target, "index.html")
     html = open(index_path, encoding="utf-8").read()
     import re
-    payload = json.dumps(project, indent=2, ensure_ascii=False)
+    # See the matching comment in each CLI's render() for why: json.dumps() doesn't escape
+    # "<", so a name/tagline/pitch containing "</script>" would otherwise corrupt the page.
+    payload = json.dumps(project, indent=2, ensure_ascii=False).replace("<", "\\u003c")
     html, n = re.subn(
         r'(<script id="project-data" type="application/json">)(.*?)(</script>)',
         lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3),

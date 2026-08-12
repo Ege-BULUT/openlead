@@ -142,7 +142,11 @@ def render(db):
         print(f"WARN: {HTML_PATH} not found — skipping render", file=sys.stderr)
         return
     html = open(HTML_PATH, encoding="utf-8").read()
-    payload = json.dumps(db, indent=2, ensure_ascii=False)
+    # json.dumps() doesn't escape "<", so journal content containing "</script>" would
+    # otherwise close the data block early and corrupt the page. < is valid JSON, decodes
+    # back to "<" transparently in JSON.parse(), and can never be read as a tag by the
+    # browser's HTML tokenizer, so this covers "</script>" and the "<!--<script" case too.
+    payload = json.dumps(db, indent=2, ensure_ascii=False).replace("<", "\\u003c")
     pattern = re.compile(
         r'(<script id="journal-data" type="application/json">)(.*?)(</script>)',
         re.S,
