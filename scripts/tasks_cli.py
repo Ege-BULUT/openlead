@@ -220,30 +220,42 @@ def cmd_update(db, args):
             sys.exit(f"invalid status {args.status!r}, must be one of {_valid_statuses(db)}")
         if args.status != t["status"]:
             changes.append(f'status: {t["status"]} -> {args.status}')
+        else:
+            changes.append(f'status: no change (already {args.status})')
         t["status"] = args.status
     if args.urgency is not None:
         if args.urgency not in VALID_URGENCY:
             sys.exit(f"invalid urgency {args.urgency!r}, must be one of {VALID_URGENCY}")
         if args.urgency != t["urgency"]:
             changes.append(f'urgency: {t["urgency"]} -> {args.urgency}')
+        else:
+            changes.append(f'urgency: no change (already {args.urgency})')
         t["urgency"] = args.urgency
     if args.title is not None:
         if not args.title:
             sys.exit("--title cannot be empty")
         if args.title != t["title"]:
             changes.append("title edited")
+        else:
+            changes.append("title: no change")
         t["title"] = args.title
     if args.desc is not None:
         if args.desc != t["description"]:
             changes.append("description edited")
+        else:
+            changes.append("description: no change")
         t["description"] = args.desc
     if args.owner is not None:
         if args.owner != t["owner"]:
             changes.append(f'owner: {t["owner"] or "(none)"} -> {args.owner or "(none)"}')
+        else:
+            changes.append(f'owner: no change (already {args.owner or "(none)"})')
         t["owner"] = args.owner
     if args.milestone is not None:
         if args.milestone != t.get("milestone"):
             changes.append(f'milestone: {t.get("milestone") or "(none)"} -> {args.milestone}')
+        else:
+            changes.append(f'milestone: no change (already {args.milestone or "(none)"})')
         if args.milestone:
             _warn_if_unknown_milestone(args.milestone)
         t["milestone"] = args.milestone
@@ -282,14 +294,20 @@ def cmd_link(db, args):
         if args.blocked_by not in t["blockedBy"]:
             t["blockedBy"].append(args.blocked_by)
             _log_event(t, "linked", f"blockedBy += {args.blocked_by}", args.actor)
+        else:
+            _log_event(t, "linked", f"blockedBy: no change (already blocked by {args.blocked_by})", args.actor)
     if args.related_to:
         other = _find(db, args.related_to)
         if args.related_to not in t["relatedTo"]:
             t["relatedTo"].append(args.related_to)
             _log_event(t, "linked", f"relatedTo += {args.related_to}", args.actor)
+        else:
+            _log_event(t, "linked", f"relatedTo: no change (already related to {args.related_to})", args.actor)
         if t["id"] not in other["relatedTo"]:
             other["relatedTo"].append(t["id"])
             _log_event(other, "linked", f"relatedTo += {t['id']}", args.actor)
+        else:
+            _log_event(other, "linked", f"relatedTo: no change (already related to {t['id']})", args.actor)
     t["updatedAt"] = _now()
     save(db)
     render(db)
