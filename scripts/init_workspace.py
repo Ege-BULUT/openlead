@@ -61,6 +61,9 @@ def main():
     args = ap.parse_args()
 
     target = os.path.abspath(args.target)
+    if os.path.exists(target) and os.path.samefile(target, REPO_ROOT):
+        sys.exit(f"{target} is this skill's own directory. Point init_workspace.py at the "
+                 f"project you want a workspace inside, not at the skill's install location.")
     os.makedirs(target, exist_ok=True)
     os.makedirs(os.path.join(target, "data"), exist_ok=True)
     os.makedirs(os.path.join(target, "scripts"), exist_ok=True)
