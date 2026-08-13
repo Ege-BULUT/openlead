@@ -218,7 +218,7 @@
     svg.push('<line x1="' + left + '" y1="' + legendY + '" x2="' + (left + gap * Math.max(0, MS.length - 1)) +
               '" y2="' + legendY + '" stroke="#9a9890" stroke-width="0.8" opacity="0.35"/>');
     svg.push('<text x="' + left + '" y="' + (legendY + 22) + '" font-size="8" letter-spacing="0.12em" fill="var(--sub)" ' +
-             'font-family=\'SF Mono\',monospace>LEGEND</text>');
+             'font-family="\'SF Mono\', monospace">LEGEND</text>');
     [['Done', STROKE.done], ['Up next', STROKE.next], ['Planned', STROKE.planned]].forEach(function (pair, i) {
       var lx = left + 120 + i * 130;
       svg.push('<circle cx="' + lx + '" cy="' + (legendY + 19) + '" r="6" fill="' + pair[1] + '22" stroke="' + pair[1] + '" stroke-width="1.5"/>');
