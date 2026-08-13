@@ -29,6 +29,30 @@ direction, the agents work the board, and everything (status, blockers, who did 
 long it took, how many tokens it burned) is visible in one place instead of scattered across
 chat transcripts.
 
+## Screenshots
+
+Sample data below, a fictional "Acme Checkout Revamp" project, to show what a workspace looks
+like once a team has actually used it for a while.
+
+**Homepage.** Project name, tagline, and a card into each of the other three pages.
+
+![Homepage](docs/screenshots/homepage.png)
+
+**Roadmap.** Milestones on a status track (done, up next, planned), auto-laid-out from
+whatever milestones exist, with a detail card underneath each one.
+
+![Roadmap](docs/screenshots/roadmap.png)
+
+**Task board.** A Kanban view with urgency, owner, and milestone filters, cards sorted by
+urgency within each column, and a running total of agent time and tokens spent.
+
+![Task board](docs/screenshots/tasks.png)
+
+**Agent memory.** Per-agent journals: this one shows a working investigation, appended to
+over time, with the full history kept rather than overwritten.
+
+![Agent memory](docs/screenshots/memory.png)
+
 ## Why
 
 Agents are good at doing the next task. They're bad at remembering the last ten, at knowing
