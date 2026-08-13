@@ -492,9 +492,6 @@ def main():
     args = ap.parse_args()
     with locked():
         db = load()
-        if args.cmd == "show":
-            cmd_show(db, args)
-            return
         args.fn(db, args)
 
 
