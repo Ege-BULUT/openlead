@@ -109,7 +109,8 @@ working inside a project roadmap/task-board/memory system.
 **OpenCode reads the exact same file.** OpenCode's Skills system searches
 `.claude/skills/<name>/SKILL.md` directly, alongside its own `.opencode/skills/` path, with the
 same frontmatter spec (`name` + `description`), so this repo's `SKILL.md` works for both tools
-unmodified. No adapter, no fork.
+unmodified. No adapter, no fork. See [OpenCode's own skills docs](https://opencode.ai/docs/skills/)
+for the search paths and frontmatter spec this claim is based on.
 
 **Any other agent with file and shell access can use it too.** The actual functionality is
 four Python CLIs and four HTML files; the `SKILL.md` file is a discovery convenience for
