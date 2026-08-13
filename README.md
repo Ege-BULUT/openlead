@@ -9,6 +9,8 @@
               ╚═════╝  ╚═╝      ╚══════╝ ╚═╝  ╚═══╝   ╚══════╝ ╚══════╝ ╚═╝  ╚═╝ ╚═════╝
 ```
 
+**[openlead-skill.vercel.app](https://openlead-skill.vercel.app)**
+
 **A fully local roadmap, Kanban board, and agent memory for AI coding agents.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
