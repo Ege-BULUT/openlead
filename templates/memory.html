@@ -159,7 +159,8 @@
   var ENTRIES = DATA.entries;
   var byId = {};
   ENTRIES.forEach(function (e) { byId[e.id] = e; });
-  var activeId = ENTRIES.length ? ENTRIES[0].id : null;
+  var SORTED = ENTRIES.slice().sort(function (a, b) { return (b.updatedAt || '').localeCompare(a.updatedAt || ''); });
+  var activeId = SORTED.length ? SORTED[0].id : null;
 
   var jlist = document.getElementById('jlist');
   var detail = document.getElementById('detail');
@@ -177,8 +178,7 @@
       jlist.innerHTML = '<div class="empty-state">No journals yet. Click "+ New" to see how to create one.</div>';
       return;
     }
-    var sorted = ENTRIES.slice().sort(function (a, b) { return (b.updatedAt || '').localeCompare(a.updatedAt || ''); });
-    jlist.innerHTML = sorted.map(function (e) {
+    jlist.innerHTML = SORTED.map(function (e) {
       return '<button class="jitem' + (e.id === activeId ? ' active' : '') + '" data-id="' + esc(e.id) + '">' +
         '<div class="jname">' + esc(e.name) + '</div>' +
         '<div class="jmeta">' + esc(e.id) + ' · ' + esc(e.owner) + ' · ' + esc(fmtDate(e.updatedAt)) + '</div>' +
