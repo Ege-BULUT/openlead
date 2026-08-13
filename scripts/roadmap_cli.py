@@ -145,11 +145,13 @@ def cmd_add(db, args):
 
 def cmd_update(db, args):
     m = _find(db, args.milestone_id)
-    if args.status:
+    if args.status is not None:
         if args.status not in VALID_STATUS:
             sys.exit(f"invalid status {args.status!r}, must be one of {VALID_STATUS}")
         m["status"] = args.status
-    if args.name:
+    if args.name is not None:
+        if not args.name:
+            sys.exit("--name cannot be empty")
         m["name"] = args.name
     if args.description is not None:
         m["description"] = args.description

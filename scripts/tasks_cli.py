@@ -215,19 +215,21 @@ def cmd_add(db, args):
 def cmd_update(db, args):
     t = _find(db, args.task_id)
     changes = []
-    if args.status:
+    if args.status is not None:
         if args.status not in _valid_statuses(db):
             sys.exit(f"invalid status {args.status!r}, must be one of {_valid_statuses(db)}")
         if args.status != t["status"]:
             changes.append(f'status: {t["status"]} -> {args.status}')
         t["status"] = args.status
-    if args.urgency:
+    if args.urgency is not None:
         if args.urgency not in VALID_URGENCY:
             sys.exit(f"invalid urgency {args.urgency!r}, must be one of {VALID_URGENCY}")
         if args.urgency != t["urgency"]:
             changes.append(f'urgency: {t["urgency"]} -> {args.urgency}')
         t["urgency"] = args.urgency
-    if args.title:
+    if args.title is not None:
+        if not args.title:
+            sys.exit("--title cannot be empty")
         if args.title != t["title"]:
             changes.append("title edited")
         t["title"] = args.title
