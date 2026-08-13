@@ -308,9 +308,6 @@ def main():
     args = ap.parse_args()
     with locked():
         db = load()
-        if args.cmd in ("show", "list"):
-            args.fn(db, args)
-            return
         args.fn(db, args)
 
 
