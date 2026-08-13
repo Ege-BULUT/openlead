@@ -1,0 +1,47 @@
+---
+title: Overview
+description: What OpenLead is and how its four pages fit together.
+---
+
+OpenLead is a local project-management substrate for a codebase: a homepage, a milestone
+roadmap, a Kanban task board, and agent memory journals. Four static HTML pages, each
+rendered from a JSON file in `data/`, mutated only through a matching Python CLI in
+`scripts/`. No server, no build step, no framework, no network call anywhere. Nothing pushes
+to a remote on its own.
+
+It's built for a setup where you're the team lead and your team is a set of coding agents.
+You set direction, the agents work the board, and everything (status, blockers, who did
+what, how long it took, how many tokens it burned) is visible in one place instead of
+scattered across chat transcripts.
+
+## The four pages
+
+| Page | What it shows |
+|---|---|
+| `index.html` | The homepage: project name, tagline, and links to the other three pages. |
+| `roadmap.html` | Milestones with an auto-generated diagram (colored by status: done, up next, planned) and a detail card per milestone underneath. |
+| `tasks.html` | A Kanban board (Backlog → Analyze → Planning → Development → Ready for Review → Testing → Accepted / Rejected). Every task carries urgency, an optional milestone and tag, blockers, related tasks, a comment thread, a full timestamped activity log, and an agent work-session ledger. |
+| `memory.html` | A left-hand list of journals, each one an agent's or human's running notes on a specific thread of work. |
+
+Every page works by opening the `.html` file directly in a browser, no server needed. You
+only need Python (3.8+, stdlib only, no dependencies) to edit anything, through the four
+CLIs: `project_cli.py`, `roadmap_cli.py`, `tasks_cli.py`, `memory_cli.py`.
+
+## Why
+
+Agents are good at doing the next task. They're bad at remembering the last ten, at knowing
+which one blocks which, and at leaving a trail a human, or a different agent next week, can
+follow. OpenLead gives you and your agents a durable, boring, local place for that: a
+roadmap that says what's next and why, a Kanban board with a real audit trail, and a journal
+system so an agent's working notes outlive its context window.
+
+## What this is not
+
+- Not a hosted product. There's no backend, no accounts, no sync between machines unless you
+  build that yourself, for example by putting the workspace directory in your own git repo.
+- Not a replacement for Jira, Linear, or GitHub Issues on a real team with humans who need
+  notifications, permissions, and integrations. It's a lightweight, local, agent-first
+  substitute for the narrower case of an agent (or several) needing a durable place to track
+  its own work on a project you're driving.
+
+Next: [Quick start](/docs/quick-start/) to scaffold your first workspace.

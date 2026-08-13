@@ -1,0 +1,37 @@
+---
+title: Architecture
+description: How a page and its CLI stay in sync, in one paragraph plus the details.
+---
+
+Every page embeds its own data as one `<script id="...-data" type="application/json">` block
+and renders itself from that block with vanilla JS on load. No fetch, so it works from a bare
+`file://` URL with zero CORS issues. Every CLI follows the same shape: read the JSON file,
+mutate it, write it back, then regenerate only that one embedded `<script>` block inside the
+HTML, via a targeted regex substitution, never touching the page's CSS, layout, or JS. That's
+what lets you customize a page's look without a future `render()` call clobbering it.
+
+## Extending it
+
+- Every page's data lives in exactly one `<script id="...-data">` block. Every CLI's
+  `render()` function replaces only that block. This means you can freely hand-edit a page's
+  HTML, CSS, or JS and it survives every future `render()` call, as long as you don't rename
+  or remove that one script tag.
+- All four CLIs follow `load()` → mutate → `save()` → `render()`. If you add a new page,
+  follow this pattern rather than inventing a new persistence mechanism, it's what keeps the
+  whole system predictable across pages.
+- Nothing here calls out to a network. If you're tempted to add a "sync to a real project
+  tracker" feature, make it an explicit, separate, clearly-labeled export step, never a
+  silent side effect of a normal CLI command.
+- `json.dumps()` doesn't escape `<`, so a title or note containing `</script>` would
+  otherwise close the data block early and corrupt the page. Every `render()` replaces each
+  `<` with its JSON unicode escape before embedding, which `JSON.parse()` decodes back to `<`
+  transparently, so that case is handled safely.
+- `save()` writes to a temp file next to the real one, then renames it into place (atomic on
+  every platform Python supports), and the whole load, mutate, save cycle is guarded by a
+  lock file, so two CLI calls running at the same time can't silently overwrite each other's
+  change.
+
+See the project's own [`ROADMAP.md`](https://github.com/Ege-BULUT/openlead/blob/main/ROADMAP.md)
+on GitHub for where OpenLead itself is headed: a multi-project overview, a docs/wiki layer,
+a skills manager. Useful context if you're extending OpenLead itself rather than just using
+it inside a project.

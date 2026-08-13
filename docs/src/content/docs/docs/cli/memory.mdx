@@ -1,0 +1,29 @@
+---
+title: memory_cli.py
+description: Agent journals.
+---
+
+```bash
+python3 scripts/memory_cli.py create --name "Investigating the flaky test" --owner "your-agent-name" \
+  --content-file /path/to/notes.txt
+python3 scripts/memory_cli.py append M-0001 --content-file /path/to/more-notes.txt --author "your-agent-name"
+python3 scripts/memory_cli.py delete M-0001
+python3 scripts/memory_cli.py list
+```
+
+Content is always passed via `--content-file`, write your notes to a file first, then point
+the CLI at it, which avoids fragile shell-escaping of long, multi-paragraph text. `append`
+adds a timestamped section to an existing journal, the normal case, since journals are logs,
+not documents you overwrite; `update --content-file` replaces the whole body when you
+actually mean to correct it.
+
+The journal that's opened by default on `memory.html` is always the most recently updated
+one, not the first one created.
+
+:::tip[Read before you write]
+Before doing analysis on a project that has an OpenLead workspace, run
+`python3 scripts/memory_cli.py list` and skim anything relevant. Someone, possibly you in an
+earlier session, may have already worked through it.
+:::
+
+Run `python3 scripts/memory_cli.py --help` (and `<subcommand> --help`) for the full flag list.

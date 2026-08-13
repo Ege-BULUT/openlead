@@ -1,0 +1,32 @@
+---
+title: The golden rule
+description: Never hand-edit data/*.json.
+---
+
+:::caution[Never hand-edit `data/*.json`]
+Every page is a rendered **view** of its JSON file. The CLI is the only writer, because it
+also keeps ids consistent, timestamps honest, and the HTML in sync.
+:::
+
+If you do edit the JSON directly, run the matching `... render` command before anyone opens
+the page again, but prefer just using the CLI verb that does what you want; there's almost
+always one that does.
+
+## Why this works
+
+Every page's data lives in exactly one `<script id="...-data" type="application/json">`
+block. Every CLI's `render()` function replaces **only** that block via a targeted regex
+substitution. It never touches page chrome (CSS, layout, JS). This means you, or the project
+owner, can freely hand-edit a page's HTML, CSS, or JS and it survives every future `render()`
+call, as long as you don't rename or remove that one `<script id="...">` tag.
+
+All four CLIs follow the same shape:
+
+```
+load() → mutate → save() → render()
+```
+
+`save()` writes to a temp file next to the real one, then renames it into place, which is
+atomic on every platform Python supports. The load, mutate, and save cycle is also guarded by
+a lock file, so two CLI calls running at the same time can't each read the same starting
+state and silently overwrite each other's change.

@@ -1,0 +1,30 @@
+---
+title: roadmap_cli.py
+description: Milestones, the diagram, and the detail cards.
+---
+
+```bash
+python3 scripts/roadmap_cli.py add --name "Duplicate cleanup" --status next \
+  --description "Collapse every place the same rule lives twice into one source of truth." \
+  --why "Lowest risk, and it's the drift that makes every later milestone harder to verify." \
+  --chip "9 tasks" --chip "Effort: small"
+python3 scripts/roadmap_cli.py example M0 --tag P0 --text "Two config files disagree"
+python3 scripts/roadmap_cli.py update M0 --status done
+python3 scripts/roadmap_cli.py move M0 --position 2       # milestone order = display order
+python3 scripts/roadmap_cli.py note --text "A caveat shown below every milestone card"
+python3 scripts/roadmap_cli.py delete M0
+python3 scripts/roadmap_cli.py list
+```
+
+- `status` is one of `done` / `next` / `planned`. Exactly one milestone should normally be
+  `next`, that's the diagram's one focal, highlighted node, but this is a convention the CLI
+  doesn't enforce.
+- Keep `name` to 2-4 words. The diagram renders it inline next to its neighbors. Put the real
+  detail in `--description` / `--why`, which only show in the cards below the diagram.
+- The diagram (an SVG, auto-laid-out for however many milestones exist) and the detail cards
+  are both generated from the same `roadmap.json` by `roadmap.html`'s own JS. One `render`
+  updates both.
+- Every milestone card gets an automatic "Tasks →" link to `tasks.html?milestone=<id>` for
+  free; you don't need to add that as a chip.
+
+Run `python3 scripts/roadmap_cli.py --help` (and `<subcommand> --help`) for the full flag list.

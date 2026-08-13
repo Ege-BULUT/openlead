@@ -1,0 +1,53 @@
+---
+title: tasks_cli.py
+description: The Kanban board, comments, links, and work sessions.
+---
+
+```bash
+python3 scripts/tasks_cli.py add --title "Fix the duplicate config" \
+  --milestone M1 --tag backend --urgency high \
+  --desc "Two files disagree on the source of truth." --ref "design-doc#3"
+python3 scripts/tasks_cli.py update T-0001 --status development --actor "your-agent-name"
+python3 scripts/tasks_cli.py comment T-0001 --author "tester-agent" --role tester \
+  --text "Verified this in isolation; the fix looks correct."
+python3 scripts/tasks_cli.py link T-0001 --blocked-by T-0002
+python3 scripts/tasks_cli.py unlink T-0001 --blocked-by T-0002
+python3 scripts/tasks_cli.py delete T-0001
+python3 scripts/tasks_cli.py list --status backlog
+```
+
+Deleting a task drops its id from every other task's `blockedBy` / `relatedTo` too, so
+nothing is left pointing at a task that no longer exists.
+
+Columns (fixed): `backlog → analyze → planning → development → ready_for_review → testing →
+accepted (Done) / rejected`. `milestone` ties a task back to a roadmap entry; `tag` is a
+freeform category (a subsystem, a component, whatever fits your project); `refs` is a
+freeform list of external identifiers a task traces back to (a finding id, a ticket, a doc
+anchor).
+
+On the board itself, cards within a column sort by urgency (critical first), and the toolbar
+has filters for milestone, tag, urgency, and owner, plus a running total of session time and
+tokens logged across whatever's currently visible.
+
+**Every mutating command auto-logs.** `add` / `update` / `comment` / `link` / `session` all
+append a timestamped entry to the task's own `log[]`, recording who changed what and when,
+including a no-op note when the value you passed already matched. Pass
+`--actor "your-name-or-agent-type"` on `update` / `link` (and `--author` on `comment`) so the
+log actually says who did it; if you skip it, it's logged as `unspecified`.
+
+## Logging agent work sessions (time + tokens + who)
+
+If the user wants to know how much time or tokens an agent spent on a task, call `session`
+right after you, or a subagent you dispatched, finish a piece of work on it:
+
+```bash
+python3 scripts/tasks_cli.py session T-0001 --agent "code-reviewer" \
+  --duration-sec 340 --tokens 12845 --summary "Reviewed the fix, requested one change"
+```
+
+If you dispatched a subagent and its completion result reports elapsed time and token usage,
+that's exactly what `--duration-sec` / `--tokens` are for. Convert milliseconds to seconds
+and pass the token count straight through. `--agent` is a freeform string: the subagent's
+name or type.
+
+Run `python3 scripts/tasks_cli.py --help` (and `<subcommand> --help`) for the full flag list.
