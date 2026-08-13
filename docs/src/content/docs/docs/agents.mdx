@@ -1,0 +1,35 @@
+---
+title: Using it with an AI coding agent
+description: Claude Code, OpenCode, and anything else with file and shell access.
+---
+
+This repo ships as a **[Claude Code Agent Skill](https://docs.claude.com/en/docs/claude-code/skills)**.
+Drop it into `.claude/skills/openlead/` (project-local) or `~/.claude/skills/openlead/`
+(global), and a Claude Code agent picks it up automatically when the conversation is about
+setting up or working inside a project roadmap, task board, or memory system.
+
+## OpenCode
+
+OpenCode reads the exact same file. Its Skills system searches
+`.claude/skills/<name>/SKILL.md` directly, alongside its own `.opencode/skills/` path, with
+the same frontmatter spec (`name` + `description`), so this repo's `SKILL.md` works for both
+tools unmodified. No adapter, no fork. See
+[OpenCode's own skills docs](https://opencode.ai/docs/skills/) for the search paths and
+frontmatter spec this is based on.
+
+## Any other agent with file and shell access
+
+The actual functionality is four Python CLIs and four HTML files; `SKILL.md` is a discovery
+convenience for tools that support that convention. For an agent tool without a skills
+mechanism, or one this project hasn't verified, since Cursor, Windsurf, Cline, and others
+each have their own rules or custom-instructions convention that changes over time, point the
+agent at the [Overview](/docs/) and `SKILL.md` directly, or paste the relevant commands into
+whatever instruction surface that tool provides.
+
+## For agents: the short version
+
+If you're an agent reading this because you were pointed here, `SKILL.md` has the exact
+command shapes for all four CLIs, the auto-logging behavior, and the convention for recording
+how long you, or a subagent, spent on a task and how many tokens it used. The rule that
+matters most: [never hand-edit `data/*.json`](/docs/golden-rule/). Always go through the CLI,
+so ids, timestamps, and the rendered HTML stay consistent.

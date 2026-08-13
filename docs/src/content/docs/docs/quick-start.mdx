@@ -1,0 +1,40 @@
+---
+title: Quick start
+description: Scaffold your first OpenLead workspace.
+---
+
+```bash
+git clone <this-repo> openlead
+python3 openlead/scripts/init_workspace.py ~/projects/my-project/pm \
+  --name "My Project" \
+  --tagline "One-line description shown on the homepage"
+
+cd ~/projects/my-project/pm
+python3 scripts/roadmap_cli.py add --name "Get started" --status next
+python3 scripts/tasks_cli.py add --title "First real task" --milestone M0
+open index.html   # or just double-click it
+```
+
+That's it. No server to start, nothing to deploy. Re-running `init_workspace.py --force`
+later re-copies the HTML and scripts, for an upgrade, without touching your existing
+`data/*.json`.
+
+## As a Claude Code or OpenCode skill
+
+If OpenLead is installed as a skill (see [Using it with an AI coding agent](/docs/agents/)),
+`init_workspace.py` lives wherever the skill itself is installed, not inside the project
+you're setting a workspace up for, so use its full path rather than a bare relative one. If
+the skill is installed at `~/.claude/skills/openlead`, for example:
+
+```bash
+python3 ~/.claude/skills/openlead/scripts/init_workspace.py /path/to/project/openlead-workspace \
+  --name "My Project" \
+  --tagline "One-line description shown on the homepage" \
+  --pitch "One paragraph shown below the nav cards (optional)"
+```
+
+Everything after `init_workspace.py` in the command blocks throughout these docs assumes
+you've `cd`'d into the target workspace it just created, where `scripts/`, as a relative
+path, is correct.
+
+Next: [The golden rule](/docs/golden-rule/) before you touch anything by hand.

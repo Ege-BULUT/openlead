@@ -1,0 +1,15 @@
+---
+title: project_cli.py
+description: The project's name, tagline, and pitch.
+---
+
+Drives the homepage. `init_workspace.py` sets it once from `--name` / `--tagline` / `--pitch`
+when the workspace is first scaffolded; use this CLI for any change after that, rather than
+re-running `init_workspace.py --force` just to rename something.
+
+```bash
+python3 scripts/project_cli.py update --tagline "New one-line description"
+python3 scripts/project_cli.py show
+```
+
+Run `python3 scripts/project_cli.py --help` for the full flag list.

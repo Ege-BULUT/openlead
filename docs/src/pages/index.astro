@@ -1,0 +1,373 @@
+---
+import { Image } from 'astro:assets';
+import homepageShot from '../assets/screenshots/homepage.png';
+import roadmapShot from '../assets/screenshots/roadmap.png';
+import tasksShot from '../assets/screenshots/tasks.png';
+import memoryShot from '../assets/screenshots/memory.png';
+
+const banner = `              ██████╗  ██████╗  ███████╗ ███╗   ██╗   ██╗      ███████╗  █████╗  ██████╗
+              ██╔═══██╗██╔══██╗ ██╔════╝ ████╗  ██║   ██║      ██╔════╝ ██╔══██╗ ██╔══██╗
+              ██║   ██║██████╔╝ █████╗   ██╔██╗ ██║   ██║      █████╗   ███████║ ██║  ██║
+              ██║   ██║██╔═══╝  ██╔══╝   ██║╚██╗██║   ██║      ██╔══╝   ██╔══██║ ██║  ██║
+              ╚██████╔╝██║      ███████╗ ██║ ╚████║   ███████╗ ███████╗ ██║  ██║ ██████╔╝
+              ╚═════╝ ╚═╝      ╚══════╝ ╚═╝  ╚═══╝   ╚══════╝ ╚══════╝ ╚═╝  ╚═╝ ╚═════╝`;
+
+const features = [
+  {
+    name: 'Homepage',
+    href: '/docs/#the-four-pages',
+    image: homepageShot,
+    body: 'Project name, tagline, and a card into each of the other three pages.',
+  },
+  {
+    name: 'Roadmap',
+    href: '/docs/cli/roadmap/',
+    image: roadmapShot,
+    body: 'Milestones on a status track, auto-laid-out from whatever exists, with a detail card underneath each one.',
+  },
+  {
+    name: 'Task board',
+    href: '/docs/cli/tasks/',
+    image: tasksShot,
+    body: 'A Kanban view with urgency, owner, and milestone filters, cards sorted by urgency, and a running total of agent time and tokens.',
+  },
+  {
+    name: 'Agent memory',
+    href: '/docs/cli/memory/',
+    image: memoryShot,
+    body: 'Per-agent journals, appended to over time, with the full history kept rather than overwritten.',
+  },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>OpenLead: a local roadmap, Kanban board, and agent memory for coding agents</title>
+    <meta
+      name="description"
+      content="A fully local roadmap, Kanban board, and agent memory for AI coding agents. No server, no build step, no framework, no account."
+    />
+  </head>
+  <body>
+    <header class="topnav">
+      <a class="wordmark" href="/">OPENLEAD</a>
+      <nav>
+        <a href="/docs/">Docs</a>
+        <a href="https://github.com/Ege-BULUT/openlead" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <pre class="banner" aria-hidden="true">{banner}</pre>
+        <h1>A local roadmap, Kanban board, and agent memory for coding agents</h1>
+        <p class="lede">
+          Four static HTML pages, each rendered from a JSON file, edited only through a small
+          Python CLI. No server, no build step, no framework, no account, no network call
+          anywhere. Nothing pushes to a remote on its own.
+        </p>
+        <div class="badges">
+          <span class="badge">MIT license</span>
+          <span class="badge">Python 3.8+, stdlib only</span>
+          <span class="badge">Claude Code + OpenCode skill</span>
+        </div>
+        <div class="cta">
+          <a class="btn primary" href="/docs/quick-start/">Get started</a>
+          <a class="btn" href="https://github.com/Ege-BULUT/openlead" target="_blank" rel="noopener">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="pitch">
+        <p>
+          Built for a setup where you're the team lead and your team is a set of coding
+          agents. You set direction, the agents work the board, and everything, status,
+          blockers, who did what, how long it took, how many tokens it burned, is visible in
+          one place instead of scattered across chat transcripts.
+        </p>
+      </section>
+
+      <section class="features">
+        <h2>What you get</h2>
+        <div class="grid">
+          {features.map((f) => (
+            <a class="card" href={f.href}>
+              <Image src={f.image} alt={`${f.name} screenshot`} loading="lazy" widths={[400, 800]} sizes="(min-width: 900px) 45vw, 90vw" />
+              <h3>{f.name}</h3>
+              <p>{f.body}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section class="quickstart">
+        <h2>Quick start</h2>
+        <pre class="code"><code>{`git clone <this-repo> openlead
+python3 openlead/scripts/init_workspace.py ~/projects/my-project/pm \\
+  --name "My Project" \\
+  --tagline "One-line description shown on the homepage"
+
+cd ~/projects/my-project/pm
+python3 scripts/roadmap_cli.py add --name "Get started" --status next
+python3 scripts/tasks_cli.py add --title "First real task" --milestone M0
+open index.html   # or just double-click it`}</code></pre>
+        <p class="hint">
+          That's it, no server to start, nothing to deploy.
+          <a href="/docs/quick-start/">Full quick start →</a>
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <span>MIT licensed.</span>
+      <a href="https://github.com/Ege-BULUT/openlead" target="_blank" rel="noopener">Source on GitHub</a>
+      <a href="/docs/">Documentation</a>
+    </footer>
+
+    <style>
+      :root {
+        --bg: #f7f7f5;
+        --panel: #ffffff;
+        --ink: #1b1b18;
+        --sub: #6b6b63;
+        --line: #e5e3dc;
+        --mono-bg: #f1efe8;
+        --accent: #2f6fed;
+        --accent-bg: rgba(47, 111, 237, 0.1);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #17181a;
+          --panel: #1f2023;
+          --ink: #eceae5;
+          --sub: #9a9890;
+          --line: #33342f;
+          --mono-bg: #26272a;
+          --accent: #7aa2f7;
+          --accent-bg: rgba(122, 162, 247, 0.12);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        overflow-x: hidden;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code,
+      .mono {
+        font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+      }
+
+      .topnav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 1.4rem 1.5rem;
+      }
+      .wordmark {
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        color: var(--ink);
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
+      .topnav nav a {
+        margin-left: 1.5rem;
+        color: var(--sub);
+        font-size: 0.92rem;
+      }
+      .topnav nav a:hover {
+        color: var(--ink);
+      }
+
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 1.5rem 5rem;
+      }
+
+      .hero {
+        text-align: center;
+        padding: 2.5rem 0 3rem;
+      }
+      .banner {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0 auto 2rem;
+        padding: 1rem 1.4rem;
+        overflow-x: auto;
+        background: var(--mono-bg);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--accent);
+        font-size: 0.5rem;
+        line-height: 1.25;
+        text-align: left;
+      }
+      @media (min-width: 640px) {
+        .banner {
+          font-size: 0.72rem;
+        }
+      }
+      h1 {
+        font-size: 1.9rem;
+        line-height: 1.25;
+        max-width: 30ch;
+        margin: 0 auto 1rem;
+      }
+      .lede {
+        max-width: 62ch;
+        margin: 0 auto 1.6rem;
+        color: var(--sub);
+        font-size: 1.05rem;
+      }
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 1.8rem;
+      }
+      .badge {
+        font-size: 0.76rem;
+        font-family: 'SF Mono', Menlo, Consolas, monospace;
+        color: var(--sub);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+      }
+      .cta {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-block;
+        padding: 0.65rem 1.3rem;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        color: var(--ink);
+        font-weight: 600;
+        font-size: 0.92rem;
+      }
+      .btn:hover {
+        text-decoration: none;
+        border-color: var(--accent);
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .btn.primary:hover {
+        opacity: 0.92;
+      }
+
+      .pitch {
+        max-width: 62ch;
+        margin: 0 auto 3.5rem;
+        text-align: center;
+        color: var(--sub);
+        font-size: 1.02rem;
+      }
+
+      h2 {
+        font-size: 1.3rem;
+        margin-bottom: 1.4rem;
+      }
+
+      .features {
+        margin-bottom: 3.5rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.1rem;
+      }
+      @media (min-width: 640px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .card {
+        display: block;
+        min-width: 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        color: var(--ink);
+      }
+      .card:hover {
+        border-color: var(--accent);
+        text-decoration: none;
+      }
+      .card :global(img) {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-bottom: 1px solid var(--line);
+      }
+      .card h3 {
+        margin: 0.9rem 1rem 0.3rem;
+        font-size: 1rem;
+      }
+      .card p {
+        margin: 0 1rem 1rem;
+        color: var(--sub);
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+
+      .quickstart {
+        margin-bottom: 1rem;
+      }
+      .code {
+        background: var(--mono-bg);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1.2rem 1.3rem;
+        overflow-x: auto;
+        font-size: 0.84rem;
+        line-height: 1.6;
+      }
+      .hint {
+        color: var(--sub);
+        font-size: 0.9rem;
+      }
+
+      footer {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 3rem;
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        color: var(--sub);
+        font-size: 0.85rem;
+        border-top: 1px solid var(--line);
+      }
+    </style>
+  </body>
+</html>
