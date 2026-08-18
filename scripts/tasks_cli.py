@@ -67,7 +67,7 @@ def _warn_if_unknown_milestone(milestone_id):
     known = {m["id"] for m in roadmap.get("milestones", [])}
     if milestone_id not in known:
         print(f"WARN: milestone {milestone_id!r} isn't in roadmap.json yet. The task will "
-              f"still be created, but its \"Tasks →\" link won't show up anywhere until a "
+              f"still be saved, but its \"Tasks →\" link won't show up anywhere until a "
               f"milestone with that id exists", file=sys.stderr)
 
 
@@ -151,6 +151,9 @@ def _log_event(task, event, detail="", actor="unspecified"):
 def cmd_list(db, args):
     tasks = db["tasks"]
     if args.status:
+        # Without this, a typo'd status is indistinguishable from a genuinely empty column.
+        if args.status not in _valid_statuses(db):
+            sys.exit(f"invalid status {args.status!r}, must be one of {_valid_statuses(db)}")
         tasks = [t for t in tasks if t["status"] == args.status]
     if args.tag:
         tasks = [t for t in tasks if t.get("tag") == args.tag]
@@ -207,6 +210,14 @@ def cmd_add(db, args):
     }
     _log_event(task, "created", f"status={status}, urgency={args.urgency}", getattr(args, "actor", None))
     db["tasks"].append(task)
+    # "related to" is symmetric, so the other task gets the backlink too. Without this, the
+    # same relationship would look different depending on whether it was created here or
+    # through `link --related-to`, which does write both sides.
+    for other_id in related_to:
+        other = _find(db, other_id)
+        if new_id not in other["relatedTo"]:
+            other["relatedTo"].append(new_id)
+            _log_event(other, "linked", f"relatedTo += {new_id}", getattr(args, "actor", None))
     save(db)
     render(db)
     print(f'created {task["id"]}')
@@ -220,47 +231,40 @@ def cmd_update(db, args):
             sys.exit(f"invalid status {args.status!r}, must be one of {_valid_statuses(db)}")
         if args.status != t["status"]:
             changes.append(f'status: {t["status"]} -> {args.status}')
-        else:
-            changes.append(f'status: no change (already {args.status})')
         t["status"] = args.status
     if args.urgency is not None:
         if args.urgency not in VALID_URGENCY:
             sys.exit(f"invalid urgency {args.urgency!r}, must be one of {VALID_URGENCY}")
         if args.urgency != t["urgency"]:
             changes.append(f'urgency: {t["urgency"]} -> {args.urgency}')
-        else:
-            changes.append(f'urgency: no change (already {args.urgency})')
         t["urgency"] = args.urgency
     if args.title is not None:
         if not args.title:
             sys.exit("--title cannot be empty")
         if args.title != t["title"]:
             changes.append("title edited")
-        else:
-            changes.append("title: no change")
         t["title"] = args.title
     if args.desc is not None:
         if args.desc != t["description"]:
             changes.append("description edited")
-        else:
-            changes.append("description: no change")
         t["description"] = args.desc
     if args.owner is not None:
         if args.owner != t["owner"]:
             changes.append(f'owner: {t["owner"] or "(none)"} -> {args.owner or "(none)"}')
-        else:
-            changes.append(f'owner: no change (already {args.owner or "(none)"})')
         t["owner"] = args.owner
     if args.milestone is not None:
         if args.milestone != t.get("milestone"):
             changes.append(f'milestone: {t.get("milestone") or "(none)"} -> {args.milestone}')
-        else:
-            changes.append(f'milestone: no change (already {args.milestone or "(none)"})')
         if args.milestone:
             _warn_if_unknown_milestone(args.milestone)
         t["milestone"] = args.milestone
-    if changes:
-        _log_event(t, "updated", "; ".join(changes), args.actor)
+    # A re-set to the value a field already had isn't an edit. Logging it anyway (and bumping
+    # updatedAt) buried the real changes in "no change" lines and made the board look busy
+    # every time an agent re-asserted a status it had already set.
+    if not changes:
+        print(f'no changes on {t["id"]}')
+        return
+    _log_event(t, "updated", "; ".join(changes), args.actor)
     t["updatedAt"] = _now()
     save(db)
     render(db)
@@ -289,25 +293,28 @@ def cmd_link(db, args):
     t = _find(db, args.task_id)
     if args.blocked_by == t["id"] or args.related_to == t["id"]:
         sys.exit("a task can't block or relate to itself")
+    changed = False
     if args.blocked_by:
         _find(db, args.blocked_by)  # must exist
         if args.blocked_by not in t["blockedBy"]:
             t["blockedBy"].append(args.blocked_by)
             _log_event(t, "linked", f"blockedBy += {args.blocked_by}", args.actor)
-        else:
-            _log_event(t, "linked", f"blockedBy: no change (already blocked by {args.blocked_by})", args.actor)
+            changed = True
     if args.related_to:
         other = _find(db, args.related_to)
         if args.related_to not in t["relatedTo"]:
             t["relatedTo"].append(args.related_to)
             _log_event(t, "linked", f"relatedTo += {args.related_to}", args.actor)
-        else:
-            _log_event(t, "linked", f"relatedTo: no change (already related to {args.related_to})", args.actor)
+            changed = True
         if t["id"] not in other["relatedTo"]:
             other["relatedTo"].append(t["id"])
             _log_event(other, "linked", f"relatedTo += {t['id']}", args.actor)
-        else:
-            _log_event(other, "linked", f"relatedTo: no change (already related to {t['id']})", args.actor)
+            changed = True
+    # Re-linking an existing link is a no-op, so it doesn't belong in the audit trail. Mirrors
+    # cmd_unlink, which has always been quiet when there was nothing to remove.
+    if not changed:
+        print(f'nothing to link on {t["id"]}')
+        return
     t["updatedAt"] = _now()
     save(db)
     render(db)
@@ -402,7 +409,12 @@ def render(db):
     new_html, n = pattern.subn(lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3), html, count=1)
     if n == 0:
         sys.exit(f'no <script id="board-data"> block found in {HTML_PATH}, cannot render')
-    open(HTML_PATH, "w", encoding="utf-8").write(new_html)
+    # Same tmp-then-os.replace() dance save() uses: the page is what a browser has open,
+    # and a crash (or a reload) mid-write would otherwise leave a truncated, unusable file.
+    tmp_html = HTML_PATH + ".tmp"
+    with open(tmp_html, "w", encoding="utf-8") as fh:
+        fh.write(new_html)
+    os.replace(tmp_html, HTML_PATH)
 
 
 def cmd_render(db, _args):
