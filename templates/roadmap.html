@@ -170,7 +170,11 @@
       return;
     }
     var left = 62, gap = 128, top = 112, h = 300;
-    var width = left * 2 + gap * Math.max(0, MS.length - 1);
+    // The legend row below the track is a fixed ~500px wide regardless of how many
+    // milestones there are, so with fewer than four the track alone would set a viewBox
+    // narrower than the legend and clip it off the right edge (at one milestone the
+    // viewBox is 124 wide and the legend is gone entirely).
+    var width = Math.max(left * 2 + gap * Math.max(0, MS.length - 1), 560);
     var svg = [];
     svg.push('<svg viewBox="0 0 ' + width + ' ' + h + '" style="min-width:' + Math.max(width, 600) + 'px">');
     svg.push('<rect width="' + width + '" height="' + h + '" fill="var(--bg)"/>');
@@ -215,7 +219,7 @@
     });
 
     var legendY = 200;
-    svg.push('<line x1="' + left + '" y1="' + legendY + '" x2="' + (left + gap * Math.max(0, MS.length - 1)) +
+    svg.push('<line x1="' + left + '" y1="' + legendY + '" x2="' + (width - left) +
               '" y2="' + legendY + '" stroke="#9a9890" stroke-width="0.8" opacity="0.35"/>');
     svg.push('<text x="' + left + '" y="' + (legendY + 22) + '" font-size="8" letter-spacing="0.12em" fill="var(--sub)" ' +
              'font-family="\'SF Mono\', monospace">LEGEND</text>');

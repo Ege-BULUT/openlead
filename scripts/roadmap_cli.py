@@ -241,7 +241,12 @@ def render(db):
     new_html, n = pattern.subn(lambda m: m.group(1) + "\n" + payload + "\n" + m.group(3), html, count=1)
     if n == 0:
         sys.exit(f'no <script id="roadmap-data"> block found in {HTML_PATH}, cannot render')
-    open(HTML_PATH, "w", encoding="utf-8").write(new_html)
+    # Same tmp-then-os.replace() dance save() uses: the page is what a browser has open,
+    # and a crash (or a reload) mid-write would otherwise leave a truncated, unusable file.
+    tmp_html = HTML_PATH + ".tmp"
+    with open(tmp_html, "w", encoding="utf-8") as fh:
+        fh.write(new_html)
+    os.replace(tmp_html, HTML_PATH)
 
 
 def cmd_render(db, _args):

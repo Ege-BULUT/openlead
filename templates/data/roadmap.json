@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Roadmap data. Edit via scripts/roadmap_cli.py, not by hand. Run its `render` command afterward to update roadmap.html. Fully local, nothing here is ever pushed anywhere.",
     "milestoneIdPrefix": "M",
-    "nextMilestoneSeq": 0
+    "nextMilestoneSeq": 1
   },
   "intro": "The plan, sequenced.",
   "milestones": [],
