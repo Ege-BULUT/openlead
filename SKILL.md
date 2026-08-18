@@ -75,11 +75,11 @@ python3 scripts/roadmap_cli.py add --name "Duplicate cleanup" --status next \
   --description "Collapse every place the same rule lives twice into one source of truth." \
   --why "Lowest risk, and it's the drift that makes every later milestone harder to verify." \
   --chip "9 tasks" --chip "Effort: small"
-python3 scripts/roadmap_cli.py example M0 --tag P0 --text "Two config files disagree"
-python3 scripts/roadmap_cli.py update M0 --status done
-python3 scripts/roadmap_cli.py move M0 --position 2       # milestone order = display order
+python3 scripts/roadmap_cli.py example M1 --tag P0 --text "Two config files disagree"
+python3 scripts/roadmap_cli.py update M1 --status done
+python3 scripts/roadmap_cli.py move M1 --position 2       # milestone order = display order
 python3 scripts/roadmap_cli.py note --text "A caveat shown below every milestone card"
-python3 scripts/roadmap_cli.py delete M0
+python3 scripts/roadmap_cli.py delete M1
 python3 scripts/roadmap_cli.py list
 ```
 

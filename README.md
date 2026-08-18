@@ -78,6 +78,9 @@ an agent's working notes outlive its context window.
 - **`scripts/project_cli.py` / `roadmap_cli.py` / `tasks_cli.py` / `memory_cli.py`**: the
   only way any of the above gets edited. Every mutating command re-renders its page
   automatically.
+- **`tests/test_clis.py`**: an end-to-end check of all four CLIs against a scaffolded
+  throwaway workspace. Run it with `python3 tests/test_clis.py`; stdlib only, no test
+  framework, exits non-zero on failure.
 
 Every page works by opening the `.html` file directly in a browser: double-click it. There's
 nothing to install to *view* it; you only need Python (3.8+, stdlib only, no dependencies) to
@@ -93,7 +96,7 @@ python3 openlead/scripts/init_workspace.py ~/projects/my-project/pm \
 
 cd ~/projects/my-project/pm
 python3 scripts/roadmap_cli.py add --name "Get started" --status next
-python3 scripts/tasks_cli.py add --title "First real task" --milestone M0
+python3 scripts/tasks_cli.py add --title "First real task" --milestone M1
 open index.html   # or just double-click it
 ```
 
