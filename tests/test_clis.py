@@ -76,6 +76,35 @@ def diagram_check(tmp):
     check("diagram: legend fits inside the viewBox at every milestone count",
           p.returncode == 0, p.stderr.strip())
 
+    # --- drag-drop: only 4 columns draggable, toast builds a real CLI command --------
+    html = open(os.path.join(ws, "tasks.html"), encoding="utf-8").read()
+    check("drag-drop: tasks.html wires onDragStart", "function onDragStart" in html)
+    check("drag-drop: tasks.html wires onDrop", "function onDrop" in html)
+    check("drag-drop: DRAGGABLE_COLS lists the 4 manual-verify columns",
+          "'ready_for_review', 'testing', 'accepted', 'rejected'" in html)
+    # backlog must not appear in the DRAGGABLE_COLS array — drag-drop there would let
+    # humans bypass the agent claim/release flow, which is the whole reason these
+    # columns are click-only.
+    draggable_block = html.split("DRAGGABLE_COLS")[1].split("]")[0]
+    check("drag-drop: backlog is intentionally NOT in the draggable set",
+          "'backlog'" not in draggable_block)
+    check("drag-drop: drag-target CSS exists", ".col.drag-target .col-cards" in html)
+    check("drag-drop: toast CSS exists", ".dd-toast" in html)
+    check("drag-drop: toast builder emits an `update` command",
+          "showMoveToast" in html and "scripts/tasks_cli.py update" in html)
+    # JS only shows the toast — the actual write goes through the CLI we already
+    # exercise. Verify the equivalent CLI move works and produces a log entry.
+    p = run(ws, "tasks_cli.py", "add", "--title", "drag target")
+    drag_id = p.stdout.strip().split()[-1]  # "created T-9001"
+    run(ws, "tasks_cli.py", "update", drag_id, "--status", "ready_for_review",
+        "--actor", "drag-drop-test")
+    check("drag-drop: CLI accepts a status move the toast would build",
+          task(ws, drag_id)["status"] == "ready_for_review",
+          task(ws, drag_id)["status"])
+    check("drag-drop: that CLI move writes a log entry on the task",
+          any("status: backlog -> ready_for_review" in l["detail"]
+              for l in task(ws, drag_id)["log"]))
+
 
 def main():
     tmp = tempfile.mkdtemp(prefix="openlead-test-")
