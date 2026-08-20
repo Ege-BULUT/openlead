@@ -12,6 +12,17 @@ tasks.json, so ids, timestamps, and the rendered tasks.html stay consistent.
                    [--related-to T-0005 ...] [--owner "..."] [--actor "..."]
   tasks_cli.py update T-0001 [--status development] [--urgency high] [--owner "..."]
                    [--title "..."] [--desc "..."] [--actor "..."]
+                   [--duration-sec 340] [--tokens 12845] [--summary "..."]
+      # When --duration-sec/--tokens/--summary are set, a session entry is appended in the
+      # same call. Use this instead of a separate `session` command at status transitions.
+  tasks_cli.py claim T-0001 --actor "coder-agent"     # atomic: sets assignee + moves to development
+      # fails if already claimed (assignee set and != actor) — prevents two agents picking the
+      # same task. Re-running with the SAME --actor is idempotent. To hand off, run `release`.
+  tasks_cli.py release T-0001 --actor "coder-agent"   # clears assignee so another agent can claim
+  tasks_cli.py review T-0001 --verdict approve|request_changes|reject
+                   --reviewer "code-reviewer" --notes "..." [--duration-sec N] [--tokens N]
+      # records a structured verdict + reviewer + telemetry in one call. Verdict is stored on
+      # the task and visible in the board's detail view.
   tasks_cli.py comment T-0001 --author "tester-agent" --text "..." [--role tester|engineer|reviewer|human]
   tasks_cli.py link T-0001 [--blocked-by T-0002] [--related-to T-0005] [--actor "..."]
   tasks_cli.py unlink T-0001 [--blocked-by T-0002] [--related-to T-0005] [--actor "..."]
@@ -25,7 +36,7 @@ tasks.json, so ids, timestamps, and the rendered tasks.html stay consistent.
       # completion notification already reports duration_ms/subagent_tokens for exactly this.
   tasks_cli.py render          # regenerate tasks.html's embedded data block from tasks.json
 
-Every mutating command (add/update/comment/link/session) re-renders tasks.html automatically
+Every mutating command (add/update/claim/release/review/comment/link/session) re-renders tasks.html automatically
 and appends a timestamped entry to the task's own `log[]`, a full audit trail of what changed,
 who changed it, and when, visible in the task's detail view. `render` alone is only needed if
 tasks.json was hand-edited.
@@ -261,14 +272,116 @@ def cmd_update(db, args):
     # A re-set to the value a field already had isn't an edit. Logging it anyway (and bumping
     # updatedAt) buried the real changes in "no change" lines and made the board look busy
     # every time an agent re-asserted a status it had already set.
-    if not changes:
+    has_session = (args.duration_sec is not None or args.tokens is not None or args.summary)
+    if not changes and not has_session:
         print(f'no changes on {t["id"]}')
         return
-    _log_event(t, "updated", "; ".join(changes), args.actor)
+    _log_event(t, "updated", "; ".join(changes) if changes else "(no field changes; session logged)", args.actor)
+    # Optional session entry — agents that pass --duration-sec/--tokens/--summary here don't
+    # need a separate `session` call. Cuts one CLI invocation per status transition.
+    if has_session:
+        t.setdefault("sessions", []).append({
+            "ts": _now(),
+            "agent": args.actor or "unspecified",
+            "startedAt": "",
+            "endedAt": "",
+            "durationSec": args.duration_sec,
+            "tokens": args.tokens,
+            "summary": args.summary or "",
+        })
     t["updatedAt"] = _now()
     save(db)
     render(db)
     print(f'updated {t["id"]}')
+
+
+def cmd_claim(db, args):
+    """Atomically claim a task for an agent. Fails if a different agent already holds the
+    claim. The CLI lock around load+save guarantees two parallel subagents can't both win —
+    even if they call `claim` at the same instant, the second one will see the first's
+    assignee and exit non-zero."""
+    t = _find(db, args.task_id)
+    actor = args.actor or "unspecified"
+    existing = t.get("assignee")
+    if existing and existing != actor:
+        sys.exit(f'{t["id"]} is already claimed by {existing!r}; '
+                 f'cannot claim as {actor!r}. Run `release` first or pick another task.')
+    changes = []
+    if t.get("assignee") != actor:
+        t["assignee"] = actor
+        changes.append(f"assignee: {existing or '(none)'} -> {actor}")
+    if t["status"] not in ("development", "ready_for_review", "testing"):
+        # Move to development automatically — a claim without a status bump means the board
+        # never reflects that work started, and reviewers can't pick it up.
+        changes.append(f"status: {t['status']} -> development")
+        t["status"] = "development"
+    if not changes:
+        print(f'no changes on {t["id"]}')
+        return
+    _log_event(t, "claimed", "; ".join(changes), actor)
+    t["updatedAt"] = _now()
+    save(db)
+    render(db)
+    print(f'claimed {t["id"]} for {actor}')
+
+
+def cmd_release(db, args):
+    """Drop a claim so another agent can pick the task up. Only the current assignee
+    (or unspecified force via --force) can release."""
+    t = _find(db, args.task_id)
+    actor = args.actor or "unspecified"
+    existing = t.get("assignee")
+    if not existing:
+        print(f'{t["id"]} has no assignee; nothing to release')
+        return
+    if existing != actor and not args.force:
+        sys.exit(f'{t["id"]} is claimed by {existing!r}; '
+                 f'only {existing!r} can release it. Pass --force to override.')
+    del t["assignee"]
+    _log_event(t, "released", f"assignee was {existing!r}", actor)
+    t["updatedAt"] = _now()
+    save(db)
+    render(db)
+    print(f'released {t["id"]}')
+
+
+def cmd_review(db, args):
+    """Record a structured reviewer verdict. Verdict is stored on the task; duration/tokens
+    feed the same sessions[] ledger a coder's `update` does, so the cost rollup covers both."""
+    t = _find(db, args.task_id)
+    if args.verdict not in ("approve", "request_changes", "reject"):
+        sys.exit(f"invalid verdict {args.verdict!r}")
+    t["verdict"] = args.verdict
+    t["verdictBy"] = args.reviewer
+    t["verdictAt"] = _now()
+    t["verdictNotes"] = args.notes or ""
+    # A verdict also counts as a session entry — reviewers spend time and tokens too.
+    if args.duration_sec is not None or args.tokens is not None or args.notes:
+        t.setdefault("sessions", []).append({
+            "ts": _now(),
+            "agent": args.reviewer,
+            "startedAt": "",
+            "endedAt": "",
+            "durationSec": args.duration_sec,
+            "tokens": args.tokens,
+            "summary": f"verdict={args.verdict}: {(args.notes or '')[:80]}",
+        })
+    detail = f"verdict={args.verdict} by {args.reviewer}"
+    if args.duration_sec is not None:
+        detail += f", {args.duration_sec:.0f}s"
+    if args.tokens is not None:
+        detail += f", {args.tokens} tokens"
+    _log_event(t, "reviewed", detail, args.reviewer)
+    # Auto-advance: approve -> accepted, reject -> rejected. request_changes leaves it at
+    # ready_for_review (or wherever it was) so the coder picks it back up.
+    if args.verdict == "approve":
+        t["status"] = "accepted"
+    elif args.verdict == "reject":
+        t["status"] = "rejected"
+    t["updatedAt"] = _now()
+    save(db)
+    render(db)
+    print(f'reviewed {t["id"]}: {args.verdict}')
 
 
 def cmd_comment(db, args):
@@ -460,7 +573,34 @@ def main():
     p.add_argument("--owner")
     p.add_argument("--milestone")
     p.add_argument("--actor", help="who/what is making this change (for the log)")
+    # Optional session telemetry — when any of these is set, a session entry is appended
+    # alongside the field-change log. Use this at status transitions instead of a separate
+    # `session` call so the audit trail is one command, not two.
+    p.add_argument("--duration-sec", type=float, dest="duration_sec",
+                   help="wall-clock seconds the agent spent (Agent.tool.duration_ms/1000)")
+    p.add_argument("--tokens", type=int, help="tokens the agent spent (Agent.tool.subagent_tokens)")
+    p.add_argument("--summary", help="one line: what the agent actually did")
     p.set_defaults(fn=cmd_update)
+
+    p = sub.add_parser("claim")
+    p.add_argument("task_id")
+    p.add_argument("--actor", required=True, help="agent name claiming this task")
+    p.set_defaults(fn=cmd_claim)
+
+    p = sub.add_parser("release")
+    p.add_argument("task_id")
+    p.add_argument("--actor", required=True, help="agent name releasing the claim (must match assignee, unless --force)")
+    p.add_argument("--force", action="store_true", help="release even if --actor doesn't match current assignee")
+    p.set_defaults(fn=cmd_release)
+
+    p = sub.add_parser("review")
+    p.add_argument("task_id")
+    p.add_argument("--verdict", required=True, choices=("approve", "request_changes", "reject"))
+    p.add_argument("--reviewer", required=True, help="agent name issuing the verdict")
+    p.add_argument("--notes", help="what the reviewer found / why")
+    p.add_argument("--duration-sec", type=float, dest="duration_sec")
+    p.add_argument("--tokens", type=int)
+    p.set_defaults(fn=cmd_review)
 
     p = sub.add_parser("comment")
     p.add_argument("task_id")
